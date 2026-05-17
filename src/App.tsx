@@ -3,18 +3,25 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import NavBar from '@/components/NavBar/NavBar'
 import { useAuth } from '@/hooks/useAuth'
 
-// 라우트별 코드 스플리팅 (Phase 8 최적화 항목 선적용)
+// 라우트별 코드 스플리팅
 const SplashPage = lazy(() => import('@/pages/splash/SplashPage'))
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
+
+// 메인 탭 페이지
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const ReportPage = lazy(() => import('@/pages/report/ReportPage'))
 const TipOffPage = lazy(() => import('@/pages/tipoff/TipOffPage'))
 const ChatPage = lazy(() => import('@/pages/chat/ChatPage'))
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'))
 
-// 인증된 사용자만 접근 가능한 레이아웃
+// 서브 페이지 (NavBar 없음)
+const PostDetailPage = lazy(() => import('@/pages/home/PostDetailPage'))
+const SearchPage = lazy(() => import('@/pages/home/SearchPage'))
+const NotificationPage = lazy(() => import('@/pages/home/NotificationPage'))
+
+// 하단 탭 바 포함 레이아웃
 function ProtectedLayout() {
   const { isAuthenticated } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
@@ -26,7 +33,14 @@ function ProtectedLayout() {
   )
 }
 
-// 비인증 사용자 전용 레이아웃 (로그인/회원가입)
+// 서브 페이지용 레이아웃 (NavBar 없음)
+function ProtectedSubLayout() {
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <Outlet />
+}
+
+// 비인증 사용자 전용 레이아웃
 function AuthLayout() {
   const { isAuthenticated } = useAuth()
   if (isAuthenticated) return <Navigate to="/" replace />
@@ -48,7 +62,14 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
-          {/* 인증 필요 */}
+          {/* 서브 페이지 (NavBar 없음) */}
+          <Route element={<ProtectedSubLayout />}>
+            <Route path="/post/:id" element={<PostDetailPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/notifications" element={<NotificationPage />} />
+          </Route>
+
+          {/* 메인 탭 페이지 (NavBar 포함) */}
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/report/*" element={<ReportPage />} />
