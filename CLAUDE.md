@@ -13,8 +13,6 @@
 - `docs/작업명세서_MissingPET.md` — WBS.md와 동일 내용. 파일명으로 빠르게 찾을 수 있는 한국어 버전.
 - `docs/UI_기획서.pdf` — 피그마 기반 상세 화면 설계서. 스크린샷과 세부 UI 스펙 참고용.
   > ⚠️ 이 파일은 `.gitignore`에 등록되어 Git에 포함되지 않음.
-  > 팀 Google Drive에서 다운로드하여 `docs/UI_기획서.pdf` 경로에 배치할 것.
-  > Drive 링크: (팀 드라이브 URL을 여기에 기입)
 
 ## 기술 스택
 
