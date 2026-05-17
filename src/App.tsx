@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 const SplashPage = lazy(() => import('@/pages/splash/SplashPage'))
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'))
 const HomePage = lazy(() => import('@/pages/home/HomePage'))
 const ReportPage = lazy(() => import('@/pages/report/ReportPage'))
 const TipOffPage = lazy(() => import('@/pages/tipoff/TipOffPage'))
@@ -44,6 +45,7 @@ export default function App() {
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
 
           {/* 인증 필요 */}
