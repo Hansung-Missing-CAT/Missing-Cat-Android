@@ -413,6 +413,112 @@
   background-color: var(--color-primary-dark);
 }
 
+/* 게시글 관리 (반려인 본인용) */
+.ownerActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.statusToggleBtn {
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.statusMissing {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.statusFound {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.ownerSubActions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.editBtn,
+.deleteBtn {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.editBtn {
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.editBtn:active {
+  background: var(--color-surface);
+}
+
+.deleteBtn {
+  border: 1.5px solid #ffcdd2;
+  background: #fff8f8;
+  color: var(--color-primary);
+}
+
+.deleteBtn:active {
+  background: #ffebee;
+}
+
+/* 삭제 확인 모달 */
+.deleteModalText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  text-align: center;
+  padding: var(--spacing-2) 0 var(--spacing-4);
+  margin: 0;
+}
+
+.modalCancelBtn,
+.modalDeleteBtn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modalCancelBtn {
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+}
+
+.modalDeleteBtn {
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.modalDeleteBtn:active {
+  background: var(--color-primary-dark);
+}
+
 /* 게시글 없음 */
 .notFound {
   display: flex;

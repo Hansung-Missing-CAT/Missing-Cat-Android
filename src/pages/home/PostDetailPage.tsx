@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { MOCK_POSTS, MOCK_COMMENTS } from '@/utils/mockData'
+import { useAuthStore } from '@/stores/authStore'
+import Modal, { ModalActions } from '@/components/Modal/Modal'
+import type { MissingStatus } from '@/types'
 import styles from './PostDetailPage.module.css'
 
 const BackIcon = () => (
@@ -28,6 +31,22 @@ const SendIcon = () => (
   </svg>
 )
 
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+)
+
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="3 6 5 6 21 6" />
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+  </svg>
+)
+
 const LOST_TIMEZONE_LABELS: Record<string, string> = {
   dawn: '새벽 (0~6시)',
   morning: '오전 (6~12시)',
@@ -39,12 +58,19 @@ const LOST_TIMEZONE_LABELS: Record<string, string> = {
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const post = MOCK_POSTS.find((p) => p.id === id)
   const comments = MOCK_COMMENTS.filter((c) => c.postId === id)
   const [commentText, setCommentText] = useState('')
   const [liked, setLiked] = useState(post?.isLiked ?? false)
   const [likeCount, setLikeCount] = useState(post?.likeCount ?? 0)
   const [photoIndex, setPhotoIndex] = useState(0)
+  // No.62 실종 상태 전환 (실종중 ↔ 찾음)
+  const [postStatus, setPostStatus] = useState<MissingStatus>(post?.status ?? 'missing')
+  // No.64 삭제 확인 모달
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const isMyPost = Boolean(user && post && user.id === post.userId)
 
   if (!post) {
     return (
@@ -65,6 +91,17 @@ export default function PostDetailPage() {
     if (!commentText.trim()) return
     // TODO: API 연동
     setCommentText('')
+  }
+
+  const handleToggleStatus = () => {
+    setPostStatus((prev) => (prev === 'missing' ? 'found' : 'missing'))
+    // TODO: API 연동
+  }
+
+  const handleDelete = () => {
+    setShowDeleteModal(false)
+    // TODO: API 연동 후 navigate
+    navigate('/', { replace: true })
   }
 
   const lostDate = new Date(post.lostAt).toLocaleDateString('ko-KR', {
@@ -114,8 +151,8 @@ export default function PostDetailPage() {
               <span>🐱</span>
             </div>
           )}
-          <span className={`${styles.statusBadge} ${post.status === 'found' ? styles.found : styles.missing}`}>
-            {post.status === 'found' ? '찾음' : '실종중'}
+          <span className={`${styles.statusBadge} ${postStatus === 'found' ? styles.found : styles.missing}`}>
+            {postStatus === 'found' ? '찾음' : '실종중'}
           </span>
         </div>
 
@@ -188,6 +225,42 @@ export default function PostDetailPage() {
           </button>
         </div>
 
+        {/* No.62~64 내 게시글 관리 (반려인 본인만 표시) */}
+        {isMyPost && (
+          <>
+            <div className={styles.divider} />
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>게시글 관리</h3>
+              <div className={styles.ownerActions}>
+                <button
+                  className={`${styles.statusToggleBtn} ${postStatus === 'found' ? styles.statusFound : styles.statusMissing}`}
+                  onClick={handleToggleStatus}
+                >
+                  {postStatus === 'missing' ? '찾음으로 변경' : '실종중으로 변경'}
+                </button>
+                <div className={styles.ownerSubActions}>
+                  {/* No.63 게시글 수정 */}
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => navigate(`/report?edit=${post.id}`)}
+                  >
+                    <EditIcon />
+                    수정
+                  </button>
+                  {/* No.64 게시글 삭제 */}
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => setShowDeleteModal(true)}
+                  >
+                    <TrashIcon />
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
         <div className={styles.divider} />
 
         {/* 댓글 */}
@@ -235,6 +308,26 @@ export default function PostDetailPage() {
           <SendIcon />
         </button>
       </footer>
+
+      {/* 삭제 확인 모달 */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="게시글 삭제"
+      >
+        <p className={styles.deleteModalText}>
+          "{post.petName}" 실종 신고를 삭제하시겠어요?<br />
+          삭제 후에는 복구할 수 없습니다.
+        </p>
+        <ModalActions>
+          <button className={styles.modalCancelBtn} onClick={() => setShowDeleteModal(false)}>
+            취소
+          </button>
+          <button className={styles.modalDeleteBtn} onClick={handleDelete}>
+            삭제
+          </button>
+        </ModalActions>
+      </Modal>
     </div>
   )
 }

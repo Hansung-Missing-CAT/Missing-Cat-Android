@@ -1,0 +1,140 @@
+/* 실종 신고 5단계 위저드 */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--color-background);
+  padding-bottom: var(--nav-height);
+}
+
+.header {
+  flex-shrink: 0;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backBtn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  margin-left: -8px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+}
+
+.backBtn:active {
+  background: var(--color-surface);
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.stepCount {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 스텝 프로그레스 바 */
+.progress {
+  flex-shrink: 0;
+  position: relative;
+  padding: 16px 20px 10px;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 배경 트랙 */
+.track {
+  position: absolute;
+  top: calc(16px + 14px);
+  left: calc(20px + 14px);
+  right: calc(20px + 14px);
+  height: 2px;
+  background: var(--color-border);
+  z-index: 0;
+  border-radius: 1px;
+}
+
+/* 진행 채움 */
+.fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 1px;
+  transition: width var(--transition-base);
+}
+
+.steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.dotActive {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.dotDone {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.stepLabel {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+}
+
+.labelActive {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 스텝 컨텐츠 영역 */
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
