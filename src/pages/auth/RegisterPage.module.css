@@ -44,7 +44,7 @@
 .passwordHint {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-top: -12px;
+  margin-top: var(--spacing-1);
 }
 
 .submitButton {

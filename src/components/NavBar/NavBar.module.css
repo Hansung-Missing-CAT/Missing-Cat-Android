@@ -43,20 +43,3 @@
   height: 28px;
 }
 
-/* 실종신고 탭 — 강조 버튼 스타일 */
-.reportButton {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  box-shadow: var(--shadow-md);
-}
-
-.navItem.active .reportButton {
-  background-color: var(--color-primary-dark);
-}

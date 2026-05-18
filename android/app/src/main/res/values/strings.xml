@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Missing PET</string>
+    <string name="title_activity_main">Missing PET</string>
+    <string name="package_name">com.hansung.missingpet</string>
+    <string name="custom_url_scheme">com.hansung.missingpet</string>
+</resources>

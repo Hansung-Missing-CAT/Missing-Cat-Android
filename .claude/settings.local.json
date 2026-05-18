@@ -4,7 +4,9 @@
       "Bash(npm run *)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Hansung_Project\\\\MobileCapstone\\\\Missing-Cat-Android\\\\src\" -Recurse -File | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Hansung_Project\\\\MobileCapstone\\\\Missing-Cat-Android\\\\src\\\\\", \"\"\\) } | Sort-Object)",
       "Bash(grep -E \"\\\\.tsx?$\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(npx cap *)"
     ]
   }
 }

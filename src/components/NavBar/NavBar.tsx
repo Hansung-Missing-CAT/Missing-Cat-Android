@@ -17,10 +17,15 @@ const HomeIcon = ({ filled }: IconProps) => (
   </svg>
 )
 
-// 실종신고 탭은 항상 흰색 아이콘 (빨간 원형 버튼 내부)
-const ReportIcon = (_: IconProps) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+const ReportIcon = ({ filled }: IconProps) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth={filled ? 0 : 2}
+      strokeLinejoin="round"
+    />
   </svg>
 )
 
@@ -50,12 +55,11 @@ interface TabConfig {
   to: string
   label: string
   Icon: React.ComponentType<IconProps>
-  isReport?: boolean
 }
 
 const tabs: TabConfig[] = [
   { to: '/', label: '홈', Icon: HomeIcon },
-  { to: '/report', label: '실종신고', Icon: ReportIcon, isReport: true },
+  { to: '/report', label: '실종신고', Icon: ReportIcon },
   { to: '/tipoff', label: '제보', Icon: TipOffIcon },
   { to: '/chat', label: '채팅', Icon: ChatIcon },
 ]
@@ -63,7 +67,7 @@ const tabs: TabConfig[] = [
 export default function NavBar() {
   return (
     <nav className={styles.nav}>
-      {tabs.map(({ to, label, Icon, isReport }) => (
+      {tabs.map(({ to, label, Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -75,15 +79,9 @@ export default function NavBar() {
           {({ isActive }) => (
             <>
               <div className={styles.iconWrapper}>
-                {isReport ? (
-                  <div className={styles.reportButton}>
-                    <Icon filled={isActive} />
-                  </div>
-                ) : (
-                  <Icon filled={isActive} />
-                )}
+                <Icon filled={isActive} />
               </div>
-              {!isReport && label}
+              {label}
             </>
           )}
         </NavLink>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import NavBar from '@/components/NavBar/NavBar'
 import { useAuth } from '@/hooks/useAuth'
+import { useCapacitor } from '@/hooks/useCapacitor'
 
 // 라우트별 코드 스플리팅
 const SplashPage = lazy(() => import('@/pages/splash/SplashPage'))
@@ -52,11 +53,13 @@ function AuthLayout() {
   return <Outlet />
 }
 
-export default function App() {
+// BrowserRouter 내부에서 훅 사용을 위한 래퍼
+function AppRoutes() {
+  useCapacitor()
+
   return (
-    <BrowserRouter>
-      <Suspense fallback={null}>
-        <Routes>
+    <Suspense fallback={null}>
+      <Routes>
           {/* 스플래시 */}
           <Route path="/splash" element={<SplashPage />} />
 
@@ -91,6 +94,13 @@ export default function App() {
           <Route path="*" element={<Navigate to="/splash" replace />} />
         </Routes>
       </Suspense>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   )
 }
