@@ -1,0 +1,451 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--color-background);
+}
+
+/* 채팅방을 찾을 수 없을 때 */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100dvh;
+  gap: var(--spacing-4);
+  color: var(--color-text-secondary);
+}
+
+/* 상단 바 */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-2) 0 0;
+  height: auto;
+  min-height: var(--header-height);
+  padding-top: env(safe-area-inset-top);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: var(--header-height);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+.headerInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opponentName {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.postMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.speciesTag {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  background: rgba(211, 47, 47, 0.08);
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.metaDivider {
+  color: var(--color-border);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  border-radius: var(--radius-full);
+}
+
+.iconBtn:active {
+  background: var(--color-surface);
+}
+
+/* 더보기 메뉴 */
+.menuWrapper {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  list-style: none;
+  margin: 0;
+  padding: var(--spacing-1) 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.menuItem:active {
+  background: var(--color-surface);
+}
+
+.menuItemDanger {
+  color: var(--color-error);
+}
+
+/* 메시지 내 검색 바 */
+.msgSearchBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.msgSearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.msgSearchInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+/* 메시지 목록 */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  background: #f8f8f8;
+}
+
+.emptySearch {
+  text-align: center;
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-8);
+}
+
+/* 날짜 구분선 */
+.dateDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--spacing-2) 0;
+}
+
+.dateDivider span {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+  background: rgba(0, 0, 0, 0.06);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* 메시지 행 */
+.msgRow {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-end;
+}
+
+.mine {
+  flex-direction: row-reverse;
+}
+
+.theirs {
+  flex-direction: row;
+}
+
+/* 상대방 아바타 */
+.opponentAvatar {
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.avatarImg {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.avatarInitial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+/* 말풍선 그룹 */
+.bubbleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 72%;
+}
+
+.mine .bubbleGroup {
+  align-items: flex-end;
+}
+
+.theirs .bubbleGroup {
+  align-items: flex-start;
+}
+
+.senderName {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.bubbleRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.mine .bubbleRow {
+  flex-direction: row-reverse;
+}
+
+/* 말풍선 */
+.bubble {
+  padding: var(--spacing-3) var(--spacing-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.bubbleMine {
+  background: var(--color-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.bubbleTheirs {
+  background: #fff;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+
+/* 이미지 메시지 (No.80) */
+.msgImage {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  display: block;
+}
+
+/* 위치 메시지 (No.81) */
+.locationMsg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 읽음 표시 */
+.readStatus {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+
+/* 메시지 시간 */
+.msgTime {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+}
+
+.msgTimeRight {
+  text-align: right;
+}
+
+.msgTimeLeft {
+  text-align: left;
+}
+
+/* 입력창 */
+.inputArea {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  padding-bottom: calc(var(--spacing-2) + env(safe-area-inset-bottom));
+  background: var(--color-background);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* 첨부 버튼 */
+.attachWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.attachBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.attachMenu {
+  position: absolute;
+  bottom: 44px;
+  left: 0;
+  list-style: none;
+  margin: 0;
+  padding: var(--spacing-1) 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  min-width: 130px;
+}
+
+.attachMenuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: none;
+  border: none;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.attachMenuItem:active {
+  background: var(--color-surface);
+}
+
+/* 텍스트 입력 */
+.textInput {
+  flex: 1;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.textInput:focus {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+}
+
+.textInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+/* 전송 버튼 */
+.sendBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sendBtnActive {
+  background: var(--color-primary);
+}

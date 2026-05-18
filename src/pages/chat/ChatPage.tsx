@@ -1,4 +1,5 @@
-// Phase 5에서 구현 예정
+import ChatListPage from './ChatListPage'
+
 export default function ChatPage() {
-  return <div>채팅</div>
+  return <ChatListPage />
 }

@@ -1,0 +1,208 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* 바텀 시트 형태 */
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--color-background);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--spacing-3) var(--spacing-4) calc(var(--spacing-6) + env(safe-area-inset-bottom));
+  max-height: 80dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* 센터 다이얼로그 형태 */
+.dialog {
+  width: calc(100% - var(--spacing-8));
+  max-width: 360px;
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6) var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  align-self: center;
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  align-self: center;
+  margin-bottom: var(--spacing-1);
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.desc {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* 신고 사유 목록 */
+.reasonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reasonItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.reasonItem.selected {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 성공 메시지 */
+.successMsg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) 0;
+}
+
+.successMsg p {
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* 장소 검색 */
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+/* 지도 플레이스홀더 */
+.mapPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  height: 150px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-sm);
+  border: 1px dashed var(--color-border);
+}
+
+/* 장소 목록 */
+.locationList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.locationItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.locationItem.selected {
+  background: rgba(211, 47, 47, 0.05);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* 버튼 그룹 */
+.actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+}
+
+.cancelBtn {
+  flex: 1;
+  height: 46px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.primaryBtn {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+
+.primaryBtn.danger {
+  background: var(--color-error);
+}
+
+.primaryBtn.disabled {
+  background: var(--color-text-disabled);
+  cursor: not-allowed;
+}
