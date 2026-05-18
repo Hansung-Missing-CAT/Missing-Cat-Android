@@ -21,6 +21,10 @@ const PostDetailPage = lazy(() => import('@/pages/home/PostDetailPage'))
 const SearchPage = lazy(() => import('@/pages/home/SearchPage'))
 const NotificationPage = lazy(() => import('@/pages/home/NotificationPage'))
 const ChatRoomPage = lazy(() => import('@/pages/chat/ChatRoomPage'))
+// 설정 서브 페이지
+const ProfilePage = lazy(() => import('@/pages/settings/ProfilePage'))
+const MyPostsPage = lazy(() => import('@/pages/settings/MyPostsPage'))
+const NotificationSettingsPage = lazy(() => import('@/pages/settings/NotificationSettingsPage'))
 
 // 하단 탭 바 포함 레이아웃
 function ProtectedLayout() {
@@ -69,6 +73,9 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/notifications" element={<NotificationPage />} />
             <Route path="/chat/:roomId" element={<ChatRoomPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/my-posts" element={<MyPostsPage />} />
+            <Route path="/notification-settings" element={<NotificationSettingsPage />} />
           </Route>
 
           {/* 메인 탭 페이지 (NavBar 포함) */}
