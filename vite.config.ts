@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { fileURLToPath, URL } from 'node:url'
+
+const isAnalyze = process.env.ANALYZE === 'true'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -55,6 +58,9 @@ export default defineConfig({
         ],
       },
     }),
+    // ANALYZE=true 환경변수 설정 시 번들 리포트 생성 (npm run build:analyze)
+    isAnalyze &&
+      visualizer({ open: true, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
   ],
   resolve: {
     alias: {

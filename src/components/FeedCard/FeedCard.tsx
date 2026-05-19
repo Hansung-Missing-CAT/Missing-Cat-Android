@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { MissingPost } from '@/types'
+import LazyImage from '@/components/LazyImage/LazyImage'
 import styles from './FeedCard.module.css'
 
 interface FeedCardProps {
@@ -54,7 +55,16 @@ export default function FeedCard({ post, onClick }: FeedCardProps) {
       {/* 사진 영역 (1:1 정방형) */}
       <div className={styles.imageWrapper}>
         {post.images[0] ? (
-          <img src={post.images[0]} alt={post.petName} className={styles.image} />
+          <LazyImage
+            src={post.images[0]}
+            alt={post.petName}
+            className={styles.image}
+            fallback={
+              <div className={styles.imagePlaceholder}>
+                <span className={styles.catEmoji}>🐱</span>
+              </div>
+            }
+          />
         ) : (
           <div className={styles.imagePlaceholder}>
             <span className={styles.catEmoji}>🐱</span>

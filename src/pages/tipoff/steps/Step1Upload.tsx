@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { TipOffFormData } from '../TipOffPage'
+import { compressImages } from '@/utils/imageOptimizer'
 import styles from './Step1Upload.module.css'
 
 interface Props {
@@ -41,29 +42,34 @@ const SearchIcon = () => (
 // No.65 제보 사진 업로드 UI / No.66 촬영 가이드 / No.67 발견 위치 입력 / No.68 분석 준비 완료 표시
 export default function Step1Upload({ form, update, onStartAnalysis }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isCompressing, setIsCompressing] = useState(false)
 
   const canAnalyze = form.photos.length >= MIN_PHOTOS && form.address.trim().length > 0
   const photoReady = form.photos.length >= MIN_PHOTOS
   const locationReady = form.address.trim().length > 0
 
-  // 갤러리 선택: 파일 → base64 변환
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 갤러리 선택: 압축 후 base64 변환
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length === 0) return
-
-    const readers = files.map(
-      (file) =>
-        new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = (ev) => resolve(ev.target?.result as string)
-          reader.readAsDataURL(file)
-        }),
-    )
-
-    Promise.all(readers).then((newPhotos) => {
-      update({ photos: [...form.photos, ...newPhotos] })
-    })
     e.target.value = ''
+
+    setIsCompressing(true)
+    try {
+      const compressed = await compressImages(files)
+      const readers = compressed.map(
+        (file) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader()
+            reader.onload = (ev) => resolve(ev.target?.result as string)
+            reader.readAsDataURL(file)
+          }),
+      )
+      const newPhotos = await Promise.all(readers)
+      update({ photos: [...form.photos, ...newPhotos] })
+    } finally {
+      setIsCompressing(false)
+    }
   }
 
   const removePhoto = (index: number) => {
@@ -120,9 +126,10 @@ export default function Step1Upload({ form, update, onStartAnalysis }: Props) {
               className={styles.addBtn}
               onClick={() => fileInputRef.current?.click()}
               aria-label="사진 추가"
+              disabled={isCompressing}
             >
               <PlusIcon />
-              <span>추가</span>
+              <span>{isCompressing ? '처리 중...' : '추가'}</span>
             </button>
           </div>
 

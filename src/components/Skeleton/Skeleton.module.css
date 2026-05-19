@@ -1,0 +1,57 @@
+/* 애니메이션 shimmer 효과 */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* FeedCardSkeleton */
+.card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.imageArea {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.nameRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bottomRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}

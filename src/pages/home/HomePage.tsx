@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import HomeHeader from '@/components/HomeHeader/HomeHeader'
 import DistrictModal from '@/components/DistrictModal/DistrictModal'
 import FeedCard from '@/components/FeedCard/FeedCard'
+import { FeedListSkeleton } from '@/components/Skeleton/Skeleton'
+import ErrorState from '@/components/ErrorState/ErrorState'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useLocationStore } from '@/stores/locationStore'
 import { MOCK_POSTS, MOCK_NOTIFICATIONS } from '@/utils/mockData'
@@ -22,13 +24,29 @@ export default function HomePage() {
   const [isDistrictModalOpen, setDistrictModalOpen] = useState(false)
   const [filter, setFilter] = useState<FilterType>('latest')
   const [isMapView, setIsMapView] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
   const { selectedDistrict } = useLocationStore()
   const { setNotifications } = useNotificationStore()
 
-  // 목 알림 데이터 초기 로드
+  const loadPosts = () => {
+    setIsLoading(true)
+    setHasError(false)
+    // 목 데이터 로드 시뮬레이션 (실제 API 연동 시 교체)
+    setTimeout(() => {
+      try {
+        setNotifications(MOCK_NOTIFICATIONS)
+        setIsLoading(false)
+      } catch {
+        setHasError(true)
+        setIsLoading(false)
+      }
+    }, 600)
+  }
+
   useEffect(() => {
-    setNotifications(MOCK_NOTIFICATIONS)
-  }, [setNotifications])
+    loadPosts()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 지역 필터링
   const filteredPosts = MOCK_POSTS.filter((post) => {
@@ -45,6 +63,37 @@ export default function HomePage() {
 
   const handleCardClick = (post: MissingPost) => {
     navigate(`/post/${post.id}`)
+  }
+
+  const renderContent = () => {
+    if (isLoading) return <FeedListSkeleton count={5} />
+    if (hasError) return <ErrorState message="게시글을 불러오지 못했어요." onRetry={loadPosts} />
+    if (isMapView) {
+      return (
+        <div className={styles.mapPlaceholder}>
+          <p className={styles.mapText}>🗺</p>
+          <p>지도 뷰는 카카오맵 API 연동 후 구현됩니다</p>
+        </div>
+      )
+    }
+    if (sortedPosts.length === 0) {
+      return (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon}>🔍</span>
+          <p className={styles.emptyTitle}>{selectedDistrict}에 등록된 실종 사례가 없어요</p>
+          <p className={styles.emptyDesc}>다른 지역을 선택해 보세요</p>
+        </div>
+      )
+    }
+    return (
+      <ul className={styles.feedList}>
+        {sortedPosts.map((post) => (
+          <li key={post.id}>
+            <FeedCard post={post} onClick={() => handleCardClick(post)} />
+          </li>
+        ))}
+      </ul>
+    )
   }
 
   return (
@@ -73,27 +122,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* 콘텐츠 영역 */}
-        {isMapView ? (
-          <div className={styles.mapPlaceholder}>
-            <p className={styles.mapText}>🗺</p>
-            <p>지도 뷰는 카카오맵 API 연동 후 구현됩니다</p>
-          </div>
-        ) : sortedPosts.length > 0 ? (
-          <ul className={styles.feedList}>
-            {sortedPosts.map((post) => (
-              <li key={post.id}>
-                <FeedCard post={post} onClick={() => handleCardClick(post)} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon}>🔍</span>
-            <p className={styles.emptyTitle}>{selectedDistrict}에 등록된 실종 사례가 없어요</p>
-            <p className={styles.emptyDesc}>다른 지역을 선택해 보세요</p>
-          </div>
-        )}
+        {renderContent()}
       </main>
 
       {isDistrictModalOpen && (

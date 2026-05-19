@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { ReportFormData } from '../ReportPage'
+import { compressImages } from '@/utils/imageOptimizer'
 import styles from './Step2Photos.module.css'
 
 interface Props {
@@ -27,27 +28,31 @@ const CloseIcon = () => (
 // No.49 다중 사진 업로드 UI / No.51 미리보기 및 삭제 / No.52 촬영 가이드
 export default function Step2Photos({ form, update, onNext }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isCompressing, setIsCompressing] = useState(false)
   const canNext = form.photos.length >= MIN_PHOTOS
 
-  // No.50 갤러리 선택: 파일 → base64 변환
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // No.50 갤러리 선택: 압축 후 base64 변환
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length === 0) return
-
-    const readers = files.map(
-      (file) =>
-        new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = (ev) => resolve(ev.target?.result as string)
-          reader.readAsDataURL(file)
-        }),
-    )
-
-    Promise.all(readers).then((newPhotos) => {
-      update({ photos: [...form.photos, ...newPhotos] })
-    })
-
     e.target.value = ''
+
+    setIsCompressing(true)
+    try {
+      const compressed = await compressImages(files)
+      const readers = compressed.map(
+        (file) =>
+          new Promise<string>((resolve) => {
+            const reader = new FileReader()
+            reader.onload = (ev) => resolve(ev.target?.result as string)
+            reader.readAsDataURL(file)
+          }),
+      )
+      const newPhotos = await Promise.all(readers)
+      update({ photos: [...form.photos, ...newPhotos] })
+    } finally {
+      setIsCompressing(false)
+    }
   }
 
   const removePhoto = (index: number) => {
@@ -96,9 +101,10 @@ export default function Step2Photos({ form, update, onNext }: Props) {
             className={styles.addBtn}
             onClick={() => fileInputRef.current?.click()}
             aria-label="사진 추가"
+            disabled={isCompressing}
           >
             <PlusIcon />
-            <span>사진 추가</span>
+            <span>{isCompressing ? '처리 중...' : '사진 추가'}</span>
           </button>
         </div>
 

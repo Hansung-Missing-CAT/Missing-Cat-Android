@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import NavBar from '@/components/NavBar/NavBar'
+import PageLoader from '@/components/PageLoader/PageLoader'
 import { useAuth } from '@/hooks/useAuth'
 import { useCapacitor } from '@/hooks/useCapacitor'
 
@@ -58,7 +59,7 @@ function AppRoutes() {
   useCapacitor()
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
           {/* 스플래시 */}
           <Route path="/splash" element={<SplashPage />} />
