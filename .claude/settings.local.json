@@ -9,7 +9,8 @@
       "Bash(npx cap *)",
       "Bash(Select-String -Pattern \"error|Error|built in\")",
       "Bash(Select-Object -First 20)",
-      "Bash(dir /s /b src\\\\*.tsx src\\\\*.ts)"
+      "Bash(dir /s /b src\\\\*.tsx src\\\\*.ts)",
+      "Bash(node scripts/generate-icons.mjs)"
     ]
   }
 }
