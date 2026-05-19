@@ -76,7 +76,7 @@ export default function ReportPage() {
 
   const goNext = () => setStep((s) => Math.min(s + 1, 5))
   const goBack = () => {
-    if (step === 1) navigate(-1)
+    if (step === 1) navigate('/')
     else setStep((s) => s - 1)
   }
 

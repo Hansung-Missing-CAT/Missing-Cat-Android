@@ -44,7 +44,7 @@ export default function TipOffPage() {
 
   // 뒤로가기
   const goBack = () => {
-    if (step === 1) navigate(-1)
+    if (step === 1) navigate('/')
     else if (step === 2) setStep(1)
     else setStep(2)
   }

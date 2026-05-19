@@ -42,17 +42,35 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // 오프라인 캐싱 전략: 네트워크 우선, 실패 시 캐시 사용
+        // SPA 오프라인 탐색 fallback
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
+          // Pretendard 폰트 — 1년 CacheFirst
           {
-            urlPattern: /^https:\/\/api\./,
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // API 응답 — NetworkFirst, 10초 타임아웃 후 캐시 사용
+          {
+            urlPattern: /\/api\//,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24, // 24시간
               },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
         ],

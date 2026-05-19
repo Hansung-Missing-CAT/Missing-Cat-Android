@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import NavBar from '@/components/NavBar/NavBar'
 import PageLoader from '@/components/PageLoader/PageLoader'
+import OfflineBanner from '@/components/OfflineBanner/OfflineBanner'
 import { useAuth } from '@/hooks/useAuth'
 import { useCapacitor } from '@/hooks/useCapacitor'
 
@@ -101,6 +102,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <AppRoutes />
     </BrowserRouter>
   )
