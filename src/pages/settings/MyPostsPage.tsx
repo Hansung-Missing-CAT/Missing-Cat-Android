@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Modal, { ModalActions } from '@/components/Modal/Modal'
 import { useAuth } from '@/hooks/useAuth'
-import { MOCK_POSTS } from '@/utils/mockData'
+import { petsService } from '@/services/pets'
+import { toBackendStatus } from '@/utils/transform'
 import type { MissingPost, MissingStatus } from '@/types'
 import styles from './MyPostsPage.module.css'
 
@@ -16,32 +17,66 @@ export default function MyPostsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  // 내 게시글 목록 — API 연동 전 목 데이터 필터링 (없으면 데모용 상위 2건)
-  const [posts, setPosts] = useState<MissingPost[]>(() => {
-    const mine = MOCK_POSTS.filter((p) => p.userId === user?.id)
-    return mine.length > 0 ? mine : MOCK_POSTS.slice(0, 2)
-  })
-
+  const [posts, setPosts] = useState<MissingPost[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
-  // 실종 상태 토글 (No.62)
-  const toggleStatus = (postId: string) => {
+  // 내 게시글 목록 API 조회
+  useEffect(() => {
+    if (!user?.id) return
+    petsService
+      .listPets({ userId: user.id })
+      .then(setPosts)
+      .catch(() => setPosts([]))
+      .finally(() => setIsLoading(false))
+  }, [user?.id])
+
+  // 실종 상태 토글 (No.62) — 낙관적 업데이트
+  const toggleStatus = async (postId: string, currentStatus: MissingStatus) => {
+    const newStatus: MissingStatus = currentStatus === 'missing' ? 'found' : 'missing'
+    // UI 먼저 변경
     setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId
-          ? { ...p, status: (p.status === 'missing' ? 'found' : 'missing') as MissingStatus }
-          : p
-      )
+      prev.map((p) => (p.id === postId ? { ...p, status: newStatus } : p))
     )
-    // TODO: 상태 변경 API 연동
+    try {
+      await petsService.updatePet(postId, { status: toBackendStatus(newStatus) })
+    } catch {
+      // API 실패 시 롤백
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, status: currentStatus } : p))
+      )
+    }
   }
 
   // 게시글 삭제 확정 (No.64)
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTargetId) return
-    setPosts((prev) => prev.filter((p) => p.id !== deleteTargetId))
+    const targetId = deleteTargetId
     setDeleteTargetId(null)
-    // TODO: 삭제 API 연동
+    setPosts((prev) => prev.filter((p) => p.id !== targetId))
+    try {
+      await petsService.deletePet(targetId)
+    } catch {
+      // 삭제 실패 시 목록 다시 불러오기
+      if (user?.id) {
+        petsService.listPets({ userId: user.id }).then(setPosts).catch(() => {})
+      }
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="뒤로가기">
+            <BackIcon />
+          </button>
+          <h1 className={styles.title}>내 게시글</h1>
+          <span />
+        </header>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>불러오는 중...</div>
+      </div>
+    )
   }
 
   return (
@@ -84,7 +119,7 @@ export default function MyPostsPage() {
                       styles.statusBadge,
                       post.status === 'found' ? styles.found : styles.missing,
                     ].join(' ')}
-                    onClick={() => toggleStatus(post.id)}
+                    onClick={() => toggleStatus(post.id, post.status)}
                     title="터치하여 상태 변경"
                   >
                     {post.status === 'missing' ? '실종중' : '찾았어요'}

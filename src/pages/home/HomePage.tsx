@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import HomeHeader from '@/components/HomeHeader/HomeHeader'
 import DistrictModal from '@/components/DistrictModal/DistrictModal'
@@ -7,7 +7,8 @@ import { FeedListSkeleton } from '@/components/Skeleton/Skeleton'
 import ErrorState from '@/components/ErrorState/ErrorState'
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useLocationStore } from '@/stores/locationStore'
-import { MOCK_POSTS, MOCK_NOTIFICATIONS } from '@/utils/mockData'
+import { MOCK_NOTIFICATIONS } from '@/utils/mockData'
+import { petsService } from '@/services/pets'
 import type { MissingPost } from '@/types'
 import styles from './HomePage.module.css'
 
@@ -26,40 +27,31 @@ export default function HomePage() {
   const [isMapView, setIsMapView] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [posts, setPosts] = useState<MissingPost[]>([])
   const { selectedDistrict } = useLocationStore()
   const { setNotifications } = useNotificationStore()
 
-  const loadPosts = () => {
+  const loadPosts = useCallback(async () => {
     setIsLoading(true)
     setHasError(false)
-    // 목 데이터 로드 시뮬레이션 (실제 API 연동 시 교체)
-    setTimeout(() => {
-      try {
-        setNotifications(MOCK_NOTIFICATIONS)
-        setIsLoading(false)
-      } catch {
-        setHasError(true)
-        setIsLoading(false)
-      }
-    }, 600)
-  }
+    try {
+      // 알림은 아직 목 데이터 사용 (알림 API 연동은 별도 단계)
+      setNotifications(MOCK_NOTIFICATIONS)
+      const data = await petsService.listPets({
+        sort: filter,
+        district: selectedDistrict === '전체' ? undefined : selectedDistrict,
+      })
+      setPosts(data)
+    } catch {
+      setHasError(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [filter, selectedDistrict, setNotifications])
 
   useEffect(() => {
     loadPosts()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 지역 필터링
-  const filteredPosts = MOCK_POSTS.filter((post) => {
-    if (selectedDistrict === '전체') return true
-    return post.location.address.includes(selectedDistrict)
-  })
-
-  // 정렬
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (filter === 'latest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    if (filter === 'likes') return b.likeCount - a.likeCount
-    return b.commentCount - a.commentCount
-  })
+  }, [loadPosts])
 
   const handleCardClick = (post: MissingPost) => {
     navigate(`/post/${post.id}`)
@@ -76,7 +68,7 @@ export default function HomePage() {
         </div>
       )
     }
-    if (sortedPosts.length === 0) {
+    if (posts.length === 0) {
       return (
         <div className={styles.empty}>
           <span className={styles.emptyIcon}>🔍</span>
@@ -87,7 +79,7 @@ export default function HomePage() {
     }
     return (
       <ul className={styles.feedList}>
-        {sortedPosts.map((post) => (
+        {posts.map((post) => (
           <li key={post.id}>
             <FeedCard post={post} onClick={() => handleCardClick(post)} />
           </li>

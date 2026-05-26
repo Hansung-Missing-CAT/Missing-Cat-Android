@@ -7,6 +7,7 @@ interface Props {
   update: (partial: Partial<ReportFormData>) => void
   onSubmit: () => void
   isEdit: boolean
+  isSubmitting?: boolean
 }
 
 const PRESETS = [
@@ -19,7 +20,7 @@ const PRESETS = [
 ]
 
 // No.59 프리셋 버튼 / No.60 직접 입력 / No.61 신고 접수하기
-export default function Step5Reward({ form, update, onSubmit, isEdit }: Props) {
+export default function Step5Reward({ form, update, onSubmit, isEdit, isSubmitting }: Props) {
   const [isCustom, setIsCustom] = useState(false)
   const [customValue, setCustomValue] = useState(
     // 수정 모드에서 기존 값이 프리셋에 없을 경우 직접 입력으로 초기화
@@ -99,8 +100,8 @@ export default function Step5Reward({ form, update, onSubmit, isEdit }: Props) {
       </div>
 
       <div className={styles.footer}>
-        <button className={styles.submitBtn} onClick={onSubmit}>
-          {isEdit ? '수정 완료' : '신고 접수하기'}
+        <button className={styles.submitBtn} onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting ? '처리 중...' : (isEdit ? '수정 완료' : '신고 접수하기')}
         </button>
       </div>
     </div>

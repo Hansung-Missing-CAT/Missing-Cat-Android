@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import type { LostTimezone } from '@/types'
-import { MOCK_POSTS } from '@/utils/mockData'
+import type { LostTimezone, MissingPost } from '@/types'
+import { petsService } from '@/services/pets'
+import { uploadService } from '@/services/upload'
+import { toBackendPet } from '@/utils/transform'
 import Step1Location from './steps/Step1Location'
 import Step2Photos from './steps/Step2Photos'
 import Step3PetInfo from './steps/Step3PetInfo'
@@ -44,32 +46,55 @@ const CheckIcon = () => (
   </svg>
 )
 
+// base64 data URL → File 변환
+const dataUrlToFile = (dataUrl: string, index: number): File => {
+  const [header, b64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
+  const ext = mime.split('/')[1] ?? 'jpg'
+  const binary = atob(b64)
+  const buffer = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i)
+  return new File([buffer], `photo_${index}.${ext}`, { type: mime })
+}
+
 export default function ReportPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   // 수정 모드: ?edit=postId 쿼리 파라미터로 진입
   const editId = searchParams.get('edit')
-  const editPost = editId ? MOCK_POSTS.find((p) => p.id === editId) : null
+  const isEdit = Boolean(editId)
 
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState<ReportFormData>(() => {
-    if (!editPost) return INITIAL_FORM
-    return {
-      address: editPost.location.address,
-      detailAddress: editPost.location.detailAddress ?? '',
-      photos: editPost.images,
-      petName: editPost.petName,
-      species: editPost.species,
-      age: editPost.age?.toString() ?? '',
-      gender: editPost.gender ?? '',
-      furColor: editPost.furColor ?? '',
-      description: editPost.description ?? '',
-      lostDate: editPost.lostAt.split('T')[0],
-      lostTimezone: editPost.lostTimezone,
-      reward: editPost.reward,
-    }
-  })
+  const [form, setForm] = useState<ReportFormData>(INITIAL_FORM)
+  const [isLoadingEdit, setIsLoadingEdit] = useState(isEdit)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
+  // 수정 모드: API에서 기존 게시글 로드
+  useEffect(() => {
+    if (!editId) return
+    petsService
+      .getPet(editId)
+      .then((post: MissingPost) => {
+        setForm({
+          address: post.location.address,
+          detailAddress: post.location.detailAddress ?? '',
+          photos: post.images,
+          petName: post.petName,
+          species: post.species,
+          age: post.age?.toString() ?? '',
+          gender: post.gender ?? '',
+          furColor: post.furColor ?? '',
+          description: post.description ?? '',
+          lostDate: post.lostAt.split('T')[0],
+          lostTimezone: post.lostTimezone,
+          reward: post.reward,
+        })
+      })
+      .catch(() => navigate('/', { replace: true }))
+      .finally(() => setIsLoadingEdit(false))
+  }, [editId, navigate])
 
   const update = (partial: Partial<ReportFormData>) =>
     setForm((prev) => ({ ...prev, ...partial }))
@@ -80,12 +105,43 @@ export default function ReportPage() {
     else setStep((s) => s - 1)
   }
 
-  const handleSubmit = () => {
-    // TODO: API 연동 (실종 신고 접수 또는 수정)
-    navigate('/')
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setSubmitError('')
+    try {
+      // 기존 URL(수정 모드)은 그대로, base64는 업로드 후 path 획득
+      const existingUrls = form.photos.filter((p) => p.startsWith('http'))
+      const base64List = form.photos.filter((p) => p.startsWith('data:'))
+
+      let uploadedPaths: string[] = []
+      if (base64List.length > 0) {
+        const files = base64List.map(dataUrlToFile)
+        uploadedPaths = await uploadService.uploadPetPhotos(files)
+      }
+
+      const photoUrls = [...existingUrls, ...uploadedPaths]
+      const backendData = toBackendPet(form, photoUrls)
+
+      if (editId) {
+        await petsService.updatePet(editId, backendData)
+      } else {
+        await petsService.createPet(backendData)
+      }
+      navigate('/', { replace: true })
+    } catch {
+      setSubmitError('게시글 등록에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const isEdit = Boolean(editPost)
+  if (isLoadingEdit) {
+    return (
+      <div className={styles.page}>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>불러오는 중...</div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -133,12 +189,20 @@ export default function ReportPage() {
         {step === 3 && <Step3PetInfo form={form} update={update} onNext={goNext} />}
         {step === 4 && <Step4LostTime form={form} update={update} onNext={goNext} />}
         {step === 5 && (
-          <Step5Reward
-            form={form}
-            update={update}
-            onSubmit={handleSubmit}
-            isEdit={isEdit}
-          />
+          <>
+            <Step5Reward
+              form={form}
+              update={update}
+              onSubmit={handleSubmit}
+              isEdit={isEdit}
+              isSubmitting={isSubmitting}
+            />
+            {submitError && (
+              <p style={{ color: 'var(--color-error)', textAlign: 'center', padding: '0.5rem' }}>
+                {submitError}
+              </p>
+            )}
+          </>
         )}
       </main>
     </div>

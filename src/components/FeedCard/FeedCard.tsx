@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { MissingPost } from '@/types'
 import LazyImage from '@/components/LazyImage/LazyImage'
+import { petsService } from '@/services/pets'
 import styles from './FeedCard.module.css'
 
 interface FeedCardProps {
@@ -43,11 +44,23 @@ export default function FeedCard({ post, onClick }: FeedCardProps) {
   const [liked, setLiked] = useState(post.isLiked ?? false)
   const [likeCount, setLikeCount] = useState(post.likeCount)
 
-  const handleLike = (e: React.MouseEvent) => {
+  // 낙관적 업데이트: UI 먼저 변경 → API 실패 시 롤백
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    setLiked((prev) => !prev)
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
-    // TODO: API 연동
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1))
+    try {
+      if (wasLiked) {
+        await petsService.unlikePet(post.id)
+      } else {
+        await petsService.likePet(post.id)
+      }
+    } catch {
+      // API 실패 시 롤백
+      setLiked(wasLiked)
+      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
+    }
   }
 
   return (

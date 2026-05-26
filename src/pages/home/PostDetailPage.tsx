@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MOCK_POSTS, MOCK_COMMENTS } from '@/utils/mockData'
 import { useAuthStore } from '@/stores/authStore'
+import { petsService } from '@/services/pets'
 import Modal, { ModalActions } from '@/components/Modal/Modal'
-import type { MissingStatus } from '@/types'
+import type { MissingPost, Comment, MissingStatus } from '@/types'
+import { toBackendStatus } from '@/utils/transform'
 import styles from './PostDetailPage.module.css'
 
 const BackIcon = () => (
@@ -59,49 +60,105 @@ export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
-  const post = MOCK_POSTS.find((p) => p.id === id)
-  const comments = MOCK_COMMENTS.filter((c) => c.postId === id)
+
+  const [post, setPost] = useState<MissingPost | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [postStatus, setPostStatus] = useState<MissingStatus>('missing')
   const [commentText, setCommentText] = useState('')
-  const [liked, setLiked] = useState(post?.isLiked ?? false)
-  const [likeCount, setLikeCount] = useState(post?.likeCount ?? 0)
   const [photoIndex, setPhotoIndex] = useState(0)
-  // No.62 실종 상태 전환 (실종중 ↔ 찾음)
-  const [postStatus, setPostStatus] = useState<MissingStatus>(post?.status ?? 'missing')
-  // No.64 삭제 확인 모달
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  const isMyPost = Boolean(user && post && user.id === post.userId)
+  useEffect(() => {
+    if (!id) return
+    const load = async () => {
+      setIsLoading(true)
+      setHasError(false)
+      try {
+        const [fetchedPost, fetchedComments] = await Promise.all([
+          petsService.getPet(id),
+          petsService.getComments(id),
+        ])
+        setPost(fetchedPost)
+        setComments(fetchedComments)
+        setLiked(fetchedPost.isLiked ?? false)
+        setLikeCount(fetchedPost.likeCount)
+        setPostStatus(fetchedPost.status)
+      } catch {
+        setHasError(true)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [id])
 
-  if (!post) {
+  if (isLoading) {
+    return <div className={styles.notFound}><p>불러오는 중...</p></div>
+  }
+
+  if (hasError || !post) {
     return (
       <div className={styles.notFound}>
-        <p>게시글을 찾을 수 없어요.</p>
+        <p>{hasError ? '게시글을 불러오지 못했어요.' : '게시글을 찾을 수 없어요.'}</p>
         <button onClick={() => navigate(-1)} className={styles.backButton}>돌아가기</button>
       </div>
     )
   }
 
-  const handleLike = () => {
-    setLiked((prev) => !prev)
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1))
-    // TODO: API 연동
+  const isMyPost = Boolean(user && user.id === post.userId)
+
+  // 낙관적 업데이트: UI 먼저 변경 → API 실패 시 롤백
+  const handleLike = async () => {
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1))
+    try {
+      if (wasLiked) {
+        await petsService.unlikePet(post.id)
+      } else {
+        await petsService.likePet(post.id)
+      }
+    } catch {
+      setLiked(wasLiked)
+      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
+    }
   }
 
-  const handleCommentSubmit = () => {
+  const handleCommentSubmit = async () => {
     if (!commentText.trim()) return
-    // TODO: API 연동
-    setCommentText('')
+    try {
+      const newComment = await petsService.createComment(post.id, commentText)
+      setComments((prev) => [...prev, newComment])
+      setCommentText('')
+    } catch {
+      // 댓글 작성 실패 시 입력값 유지
+    }
   }
 
-  const handleToggleStatus = () => {
-    setPostStatus((prev) => (prev === 'missing' ? 'found' : 'missing'))
-    // TODO: API 연동
+  // 낙관적 업데이트: 상태 먼저 변경 → API 실패 시 롤백
+  const handleToggleStatus = async () => {
+    const prevStatus = postStatus
+    const newStatus: MissingStatus = prevStatus === 'missing' ? 'found' : 'missing'
+    setPostStatus(newStatus)
+    try {
+      await petsService.updatePet(post.id, { status: toBackendStatus(newStatus) })
+    } catch {
+      setPostStatus(prevStatus)
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     setShowDeleteModal(false)
-    // TODO: API 연동 후 navigate
-    navigate('/', { replace: true })
+    try {
+      await petsService.deletePet(post.id)
+      navigate('/', { replace: true })
+    } catch {
+      // 삭제 실패 시 모달만 닫고 유지
+    }
   }
 
   const lostDate = new Date(post.lostAt).toLocaleDateString('ko-KR', {
@@ -263,9 +320,9 @@ export default function PostDetailPage() {
 
         <div className={styles.divider} />
 
-        {/* 댓글 */}
+        {/* 댓글 — comments.length로 실시간 카운트 표시 */}
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>댓글 {post.commentCount}개</h3>
+          <h3 className={styles.sectionTitle}>댓글 {comments.length}개</h3>
           {comments.length > 0 ? (
             <ul className={styles.commentList}>
               {comments.map((c) => (
