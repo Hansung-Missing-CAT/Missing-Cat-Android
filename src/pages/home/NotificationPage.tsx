@@ -11,12 +11,16 @@ const BackIcon = () => (
   </svg>
 )
 
-// 알림 타입별 아이콘
+// 알림 타입별 아이콘 (DB 타입 + 프론트 전용 타입 포함)
 const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   matching: '🤖',
   comment: '💬',
   tipoff: '📸',
   nearby: '📍',
+  like: '❤️',
+  tip: '📸',
+  found: '🎉',
+  nearby_report: '📍',
 }
 
 // 알림 타입별 색상
@@ -25,6 +29,10 @@ const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   comment: '#1976D2',
   tipoff: '#388E3C',
   nearby: '#F57C00',
+  like: '#D32F2F',
+  tip: '#388E3C',
+  found: '#7B1FA2',
+  nearby_report: '#F57C00',
 }
 
 // 경과 시간 계산

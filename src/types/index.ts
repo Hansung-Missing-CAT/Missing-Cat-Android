@@ -34,6 +34,7 @@ export interface MissingPost {
   images: string[]
   likeCount: number
   commentCount: number
+  viewCount?: number
   isLiked?: boolean
   createdAt: string
   updatedAt: string
@@ -65,8 +66,16 @@ export interface Comment {
   createdAt: string
 }
 
-// 알림 타입
-export type NotificationType = 'comment' | 'matching' | 'tipoff' | 'nearby'
+// 알림 타입 — DB 실제 값 + 프론트 전용 타입 포함
+export type NotificationType =
+  | 'comment'        // 댓글
+  | 'like'           // 좋아요
+  | 'tip'            // 제보 (DB)
+  | 'found'          // 찾음 (DB)
+  | 'nearby_report'  // 근처 제보 (DB)
+  | 'matching'       // AI 매칭 (프론트 전용)
+  | 'tipoff'         // 제보 (프론트 전용, 구버전)
+  | 'nearby'         // 근처 (프론트 전용, 구버전)
 
 // 알림
 export interface Notification {

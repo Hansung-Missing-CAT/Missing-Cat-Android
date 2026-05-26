@@ -1,15 +1,42 @@
 import apiClient from './api'
 import type { ChatRoom, ChatMessage, User, MissingPost } from '@/types'
 
+// 페이지네이션 래핑 응답 타입 (배열 또는 { data, nextCursor, hasMore })
+interface PaginatedChatRoomResponse {
+  data: BackendChatRoom[]
+  nextCursor?: string
+  hasMore?: boolean
+}
+
+interface PaginatedChatMessageResponse {
+  data: BackendChatMessage[]
+  nextCursor?: string
+  hasMore?: boolean
+}
+
+// 배열 또는 래핑 응답에서 BackendChatRoom[] 추출
+const extractChatRooms = (raw: BackendChatRoom[] | PaginatedChatRoomResponse): BackendChatRoom[] => {
+  if (Array.isArray(raw)) return raw
+  return raw.data ?? []
+}
+
+// 배열 또는 래핑 응답에서 BackendChatMessage[] 추출
+const extractChatMessages = (raw: BackendChatMessage[] | PaginatedChatMessageResponse): BackendChatMessage[] => {
+  if (Array.isArray(raw)) return raw
+  return raw.data ?? []
+}
+
 // 백엔드 채팅방 응답 타입 (snake_case)
 interface BackendChatRoom {
   id: string
   pet_id?: string
   pet_name?: string
   pet_photo?: string
-  other_user_id: string
-  other_user_name: string
+  // 백엔드 JOIN 결과 — 없으면 participant_ids 배열로 fallback
+  other_user_id?: string
+  other_user_name?: string
   other_user_avatar?: string
+  participant_ids?: string[]   // DB 실제 컬럼 (JOIN 미포함 시)
   is_online?: boolean
   last_message?: string
   last_message_type?: ChatMessage['type']
@@ -19,15 +46,15 @@ interface BackendChatRoom {
   updated_at: string
 }
 
-// 백엔드 메시지 응답 타입 (snake_case)
+// 백엔드 메시지 응답 타입 (snake_case) — DB 컬럼명 기준
 export interface BackendChatMessage {
   id: string
   sender_id: string
-  content: string
+  message: string    // DB 컬럼명: message (content 아님)
   type: ChatMessage['type']
   image_url?: string
   location?: { lat?: number; lng?: number; address?: string }
-  read_by: string[]
+  read_by: string[]  // 읽은 사용자 UUID 배열
   created_at: string
 }
 
@@ -46,14 +73,21 @@ const getMyId = (): string => {
 // 백엔드 채팅방 → 프론트 ChatRoom 변환
 const toFrontendChatRoom = (b: BackendChatRoom): ChatRoom => {
   const myId = getMyId()
-
-  const otherUser: User = {
-    id: b.other_user_id,
-    email: '',
-    nickname: b.other_user_name,
-    profileImage: b.other_user_avatar,
-  }
   const me: User = { id: myId, email: '', nickname: '나' }
+
+  // JOIN 결과(other_user_id)가 있으면 우선 사용, 없으면 participant_ids에서 상대방 추출
+  let otherUser: User
+  if (b.other_user_id) {
+    otherUser = {
+      id: b.other_user_id,
+      email: '',
+      nickname: b.other_user_name ?? '상대방',
+      profileImage: b.other_user_avatar,
+    }
+  } else {
+    const otherId = b.participant_ids?.find((pid) => pid !== myId) ?? ''
+    otherUser = { id: otherId, email: '', nickname: '상대방' }
+  }
 
   const lastMessage: ChatMessage | undefined = b.last_message
     ? {
@@ -105,7 +139,7 @@ export const toFrontendChatMessage = (b: BackendChatMessage, chatId: string): Ch
     id: b.id,
     chatRoomId: chatId,
     senderId: b.sender_id,
-    content: b.content,
+    content: b.message,  // DB 컬럼명 message → 프론트 content
     type: b.type,
     imageUrl: b.image_url,
     location: b.location
@@ -117,10 +151,10 @@ export const toFrontendChatMessage = (b: BackendChatMessage, chatId: string): Ch
 }
 
 export const chatsService = {
-  // 채팅방 목록 조회
+  // 채팅방 목록 조회 — 배열 또는 { data, nextCursor, hasMore } 래핑 응답 모두 처리
   getChatList: async (params?: { q?: string; limit?: number }): Promise<ChatRoom[]> => {
-    const res = await apiClient.get<BackendChatRoom[]>('/chats', { params })
-    return res.data.map(toFrontendChatRoom)
+    const res = await apiClient.get<BackendChatRoom[] | PaginatedChatRoomResponse>('/chats', { params })
+    return extractChatRooms(res.data).map(toFrontendChatRoom)
   },
 
   // 채팅방 상세 조회
@@ -129,10 +163,10 @@ export const chatsService = {
     return toFrontendChatRoom(res.data)
   },
 
-  // 메시지 목록 조회
+  // 메시지 목록 조회 — 배열 또는 { data, nextCursor, hasMore } 래핑 응답 모두 처리
   getMessages: async (chatId: string): Promise<ChatMessage[]> => {
-    const res = await apiClient.get<BackendChatMessage[]>(`/chats/${chatId}/messages`)
-    return res.data.map((m) => toFrontendChatMessage(m, chatId))
+    const res = await apiClient.get<BackendChatMessage[] | PaginatedChatMessageResponse>(`/chats/${chatId}/messages`)
+    return extractChatMessages(res.data).map((m) => toFrontendChatMessage(m, chatId))
   },
 
   // 메시지 전송

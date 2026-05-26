@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import axios from 'axios'
 import type { MissingPost } from '@/types'
 import LazyImage from '@/components/LazyImage/LazyImage'
 import { petsService } from '@/services/pets'
@@ -56,8 +57,9 @@ export default function FeedCard({ post, onClick }: FeedCardProps) {
       } else {
         await petsService.likePet(post.id)
       }
-    } catch {
-      // API 실패 시 롤백
+    } catch (err) {
+      // 409: 서버 상태가 UI와 이미 일치 (ALREADY_LIKED 등) — 롤백 불필요
+      if (axios.isAxiosError(err) && err.response?.status === 409) return
       setLiked(wasLiked)
       setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
     }
@@ -67,7 +69,7 @@ export default function FeedCard({ post, onClick }: FeedCardProps) {
     <article className={styles.card} onClick={onClick}>
       {/* 사진 영역 (1:1 정방형) */}
       <div className={styles.imageWrapper}>
-        {post.images[0] ? (
+        {post.images?.[0] ? (
           <LazyImage
             src={post.images[0]}
             alt={post.petName}

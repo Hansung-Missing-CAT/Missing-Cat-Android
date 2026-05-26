@@ -95,21 +95,21 @@
 }
 
 .ageInput {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
 .ageInput .input {
-  padding-right: 36px;
+  flex: 1;
+  min-width: 0;
 }
 
 .ageUnit {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  pointer-events: none;
+  white-space: nowrap;
 }
 
 .genderGroup {

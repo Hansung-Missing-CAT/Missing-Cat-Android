@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { petsService } from '@/services/pets'
@@ -83,7 +84,7 @@ export default function PostDetailPage() {
           petsService.getComments(id),
         ])
         setPost(fetchedPost)
-        setComments(fetchedComments)
+        setComments(fetchedComments ?? [])
         setLiked(fetchedPost.isLiked ?? false)
         setLikeCount(fetchedPost.likeCount)
         setPostStatus(fetchedPost.status)
@@ -110,6 +111,10 @@ export default function PostDetailPage() {
   }
 
   const isMyPost = Boolean(user && user.id === post.userId)
+  // 본인 게시글인데 authorNickname이 비어 있으면 authStore 닉네임을 우선 표시
+  const displayAuthorName = isMyPost
+    ? (user?.nickname || post.authorNickname || '나')
+    : (post.authorNickname || '익명')
 
   // 낙관적 업데이트: UI 먼저 변경 → API 실패 시 롤백
   const handleLike = async () => {
@@ -122,7 +127,9 @@ export default function PostDetailPage() {
       } else {
         await petsService.likePet(post.id)
       }
-    } catch {
+    } catch (err) {
+      // 409: 서버 상태가 UI와 이미 일치 (ALREADY_LIKED 등) — 롤백 불필요
+      if (axios.isAxiosError(err) && err.response?.status === 409) return
       setLiked(wasLiked)
       setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
     }
@@ -225,8 +232,8 @@ export default function PostDetailPage() {
               </p>
             </div>
             <div className={styles.authorInfo}>
-              <div className={styles.avatar}>{post.authorNickname[0]}</div>
-              <span className={styles.authorName}>{post.authorNickname}</span>
+              <div className={styles.avatar}>{displayAuthorName[0] ?? '?'}</div>
+              <span className={styles.authorName}>{displayAuthorName}</span>
             </div>
           </div>
           {post.furColor && (
@@ -327,10 +334,10 @@ export default function PostDetailPage() {
             <ul className={styles.commentList}>
               {comments.map((c) => (
                 <li key={c.id} className={styles.commentItem}>
-                  <div className={styles.commentAvatar}>{c.authorNickname[0]}</div>
+                  <div className={styles.commentAvatar}>{c.authorNickname?.[0] ?? '?'}</div>
                   <div className={styles.commentBody}>
                     <div className={styles.commentTop}>
-                      <span className={styles.commentAuthor}>{c.authorNickname}</span>
+                      <span className={styles.commentAuthor}>{c.authorNickname || '익명'}</span>
                       <span className={styles.commentTime}>
                         {new Date(c.createdAt).toLocaleDateString('ko-KR')}
                       </span>
