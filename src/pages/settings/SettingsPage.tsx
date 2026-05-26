@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Modal, { ModalActions } from '@/components/Modal/Modal'
 import { useAuth } from '@/hooks/useAuth'
 import { authService } from '@/services/auth'
+import { socketService } from '@/services/socket'
+import { devicesService } from '@/services/devices'
 import styles from './SettingsPage.module.css'
 
 const ChevronIcon = () => (
@@ -28,14 +30,22 @@ export default function SettingsPage() {
 
   // 로그아웃 처리 (No.90)
   const handleLogout = async () => {
+    try {
+      await devicesService.removeDevice()
+    } catch { /* 디바이스 토큰 삭제 실패 무시 */ }
     try { await authService.logout() } catch { /* 서버 오류 무시 */ }
+    socketService.disconnect()
     clearAuth()
     navigate('/login', { replace: true })
   }
 
   // 회원 탈퇴 처리 (No.91)
   const handleWithdraw = async () => {
-    // TODO: 탈퇴 API 연동
+    // TODO: 백엔드 탈퇴 엔드포인트 구현 후 연동 (DELETE /api/users/me)
+    try {
+      await devicesService.removeDevice()
+    } catch { /* 디바이스 토큰 삭제 실패 무시 */ }
+    socketService.disconnect()
     clearAuth()
     navigate('/login', { replace: true })
   }

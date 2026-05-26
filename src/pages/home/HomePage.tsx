@@ -5,9 +5,7 @@ import DistrictModal from '@/components/DistrictModal/DistrictModal'
 import FeedCard from '@/components/FeedCard/FeedCard'
 import { FeedListSkeleton } from '@/components/Skeleton/Skeleton'
 import ErrorState from '@/components/ErrorState/ErrorState'
-import { useNotificationStore } from '@/stores/notificationStore'
 import { useLocationStore } from '@/stores/locationStore'
-import { MOCK_NOTIFICATIONS } from '@/utils/mockData'
 import { petsService } from '@/services/pets'
 import type { MissingPost } from '@/types'
 import styles from './HomePage.module.css'
@@ -29,14 +27,11 @@ export default function HomePage() {
   const [hasError, setHasError] = useState(false)
   const [posts, setPosts] = useState<MissingPost[]>([])
   const { selectedDistrict } = useLocationStore()
-  const { setNotifications } = useNotificationStore()
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true)
     setHasError(false)
     try {
-      // 알림은 아직 목 데이터 사용 (알림 API 연동은 별도 단계)
-      setNotifications(MOCK_NOTIFICATIONS)
       const data = await petsService.listPets({
         sort: filter,
         district: selectedDistrict === '전체' ? undefined : selectedDistrict,
@@ -47,7 +42,7 @@ export default function HomePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [filter, selectedDistrict, setNotifications])
+  }, [filter, selectedDistrict])
 
   useEffect(() => {
     loadPosts()

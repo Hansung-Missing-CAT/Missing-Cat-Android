@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FeedCard from '@/components/FeedCard/FeedCard'
-import { MOCK_POSTS } from '@/utils/mockData'
+import { petsService } from '@/services/pets'
 import type { MissingPost } from '@/types'
 import styles from './SearchPage.module.css'
 
@@ -47,10 +47,24 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecentSearches)
+  const [results, setResults] = useState<MissingPost[]>([])
+  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  // submittedQuery 변경 시 API 검색
+  useEffect(() => {
+    if (!submittedQuery) {
+      setResults([])
+      return
+    }
+    setIsSearching(true)
+    void petsService.listPets({ q: submittedQuery })
+      .then(setResults)
+      .finally(() => setIsSearching(false))
+  }, [submittedQuery])
 
   const search = (keyword: string) => {
     const trimmed = keyword.trim()
@@ -76,15 +90,6 @@ export default function SearchPage() {
     removeRecentSearch(keyword)
     setRecentSearches(getRecentSearches())
   }
-
-  // 이름, 품종, 위치 기반 검색
-  const results: MissingPost[] = submittedQuery
-    ? MOCK_POSTS.filter((p) =>
-        p.petName.includes(submittedQuery) ||
-        p.species.includes(submittedQuery) ||
-        p.location.address.includes(submittedQuery),
-      )
-    : []
 
   return (
     <div className={styles.page}>
@@ -142,7 +147,9 @@ export default function SearchPage() {
           <>
             <div className={styles.resultHeader}>
               <span className={styles.resultCount}>
-                "{submittedQuery}" 검색 결과 {results.length}건
+                {isSearching
+                  ? `"${submittedQuery}" 검색 중...`
+                  : `"${submittedQuery}" 검색 결과 ${results.length}건`}
               </span>
             </div>
             {results.length > 0 ? (

@@ -1,10 +1,12 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import NavBar from '@/components/NavBar/NavBar'
 import PageLoader from '@/components/PageLoader/PageLoader'
 import OfflineBanner from '@/components/OfflineBanner/OfflineBanner'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores/authStore'
 import { useCapacitor } from '@/hooks/useCapacitor'
+import { socketService } from '@/services/socket'
 
 // 라우트별 코드 스플리팅
 const SplashPage = lazy(() => import('@/pages/splash/SplashPage'))
@@ -58,6 +60,16 @@ function AuthLayout() {
 // BrowserRouter 내부에서 훅 사용을 위한 래퍼
 function AppRoutes() {
   useCapacitor()
+
+  // 인증 상태 변경 시 소켓 연결/해제
+  const { isAuthenticated, accessToken } = useAuthStore()
+  useEffect(() => {
+    if (isAuthenticated && accessToken) {
+      socketService.connect(accessToken)
+    } else {
+      socketService.disconnect()
+    }
+  }, [isAuthenticated, accessToken])
 
   return (
     <Suspense fallback={<PageLoader />}>

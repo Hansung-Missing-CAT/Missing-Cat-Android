@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Input from '@/components/Input/Input'
 import Button from '@/components/Button/Button'
 import { useAuth } from '@/hooks/useAuth'
+import { usersService } from '@/services/users'
+import { uploadService } from '@/services/upload'
 import styles from './ProfilePage.module.css'
 
 const BackIcon = () => (
@@ -22,6 +24,7 @@ export default function ProfilePage() {
   const navigate = useNavigate()
   const { user, updateUser } = useAuth()
   const fileRef = useRef<HTMLInputElement>(null)
+  const selectedFileRef = useRef<File | null>(null)
 
   const [isEditing, setIsEditing] = useState(false)
   const [nickname, setNickname] = useState(user?.nickname ?? '')
@@ -35,6 +38,7 @@ export default function ProfilePage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    selectedFileRef.current = file
     const reader = new FileReader()
     reader.onload = (ev) => setPreviewImg(ev.target?.result as string)
     reader.readAsDataURL(file)
@@ -53,17 +57,22 @@ export default function ProfilePage() {
     return true
   }
 
-  // 프로필 저장 (No.87)
+  // 프로필 저장 (No.87) — 이미지가 변경된 경우 업로드 후 URL 전달
   const handleSave = async () => {
     if (!validate()) return
     setIsSaving(true)
     try {
-      // TODO: 프로필 수정 API 연동
-      updateUser({
+      let avatarUrl: string | undefined
+      if (selectedFileRef.current) {
+        avatarUrl = await uploadService.uploadAvatar(selectedFileRef.current)
+        selectedFileRef.current = null
+      }
+      const updated = await usersService.updateMe({
         nickname: nickname.trim(),
         phone: phone.trim() || undefined,
-        profileImage: previewImg || undefined,
+        profileImage: avatarUrl,
       })
+      updateUser(updated)
       setIsEditing(false)
     } finally {
       setIsSaving(false)

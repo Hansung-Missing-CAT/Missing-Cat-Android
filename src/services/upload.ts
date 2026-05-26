@@ -40,8 +40,18 @@ const uploadPetPhotos = async (files: File[]): Promise<string[]> => {
   return paths
 }
 
+// 프로필 이미지 단건 업로드 — 'avatars' 버킷 사용
+const uploadAvatar = async (file: File): Promise<string> => {
+  const ext = file.name.split('.').pop() ?? 'jpg'
+  const fileName = `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+  const { signedUrl, path } = await getPresignedUrl('avatars', fileName, file.type)
+  await uploadFile(signedUrl, file, file.type)
+  return path
+}
+
 export const uploadService = {
   getPresignedUrl,
   uploadFile,
   uploadPetPhotos,
+  uploadAvatar,
 }
