@@ -1,12 +1,24 @@
 import { create } from 'zustand'
 import type { ChatRoom, ChatMessage, User } from '@/types'
 
-// 목 데이터 — 실제 서비스에서는 API로 대체
+// 목 데이터 — 실제 서비스에서는 API로 대체 (하위 호환 유지)
 const MOCK_ME: User = {
   id: 'me',
   email: 'me@example.com',
   nickname: '나',
   profileImage: undefined,
+}
+
+// 현재 로그인 유저 ID를 Zustand persist 저장소에서 읽기
+const getMyId = (): string => {
+  try {
+    const raw = localStorage.getItem('auth-storage')
+    if (!raw) return MOCK_ME.id
+    const parsed = JSON.parse(raw) as { state?: { user?: { id?: string } } }
+    return parsed?.state?.user?.id ?? MOCK_ME.id
+  } catch {
+    return MOCK_ME.id
+  }
 }
 
 const MOCK_ROOMS: ChatRoom[] = [
@@ -147,6 +159,8 @@ interface ChatState {
   setCurrentRoom: (roomId: string | null) => void
   setSearchQuery: (q: string) => void
   setRoomSearchQuery: (q: string) => void
+  setRooms: (rooms: ChatRoom[]) => void
+  setMessages: (roomId: string, messages: ChatMessage[]) => void
   sendMessage: (roomId: string, content: string, type?: ChatMessage['type'], extra?: Partial<ChatMessage>) => void
   markAsRead: (roomId: string) => void
   leaveRoom: (roomId: string) => void
@@ -175,11 +189,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setRoomSearchQuery: (q) => set({ roomSearchQuery: q }),
 
+  // API에서 받아온 채팅방 목록으로 교체
+  setRooms: (rooms) => set({ rooms }),
+
+  // API에서 받아온 메시지 목록으로 교체
+  setMessages: (roomId, messages) =>
+    set((state) => ({ messages: { ...state.messages, [roomId]: messages } })),
+
   sendMessage: (roomId, content, type = 'text', extra = {}) => {
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
       chatRoomId: roomId,
-      senderId: 'me',
+      senderId: getMyId(),  // 실제 사용자 ID 사용
       content,
       type,
       isRead: false,

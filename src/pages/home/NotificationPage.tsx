@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { notificationsService } from '@/services/notifications'
 import type { NotificationType } from '@/types'
 import styles from './NotificationPage.module.css'
 
@@ -40,14 +42,26 @@ function getTimeAgo(dateStr: string): string {
 // 알림 목록 페이지 (NavBar 없음)
 export default function NotificationPage() {
   const navigate = useNavigate()
-  const { notifications, markAsRead, markAllAsRead } = useNotificationStore()
+  const { notifications, setNotifications, markAsRead, markAllAsRead } = useNotificationStore()
   const unreadCount = notifications.filter((n) => !n.isRead).length
 
+  // 알림 목록 API 로드
+  useEffect(() => {
+    void notificationsService.getNotifications().then(setNotifications)
+  }, [setNotifications])
+
   const handleNotificationClick = (id: string, relatedPostId?: string) => {
+    // 로컬 상태 업데이트 + API 읽음 처리
     markAsRead(id)
+    void notificationsService.markAsRead(id)
     if (relatedPostId) {
       navigate(`/post/${relatedPostId}`)
     }
+  }
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead()
+    void notificationsService.markAllAsRead()
   }
 
   return (
@@ -59,7 +73,7 @@ export default function NotificationPage() {
         </button>
         <h1 className={styles.title}>알림</h1>
         {unreadCount > 0 && (
-          <button className={styles.readAllBtn} onClick={markAllAsRead}>
+          <button className={styles.readAllBtn} onClick={handleMarkAllAsRead}>
             모두 읽음
           </button>
         )}

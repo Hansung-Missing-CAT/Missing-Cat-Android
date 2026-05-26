@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useChatStore, MOCK_ME } from '@/stores/chatStore'
+import { useChatStore } from '@/stores/chatStore'
+import { useAuthStore } from '@/stores/authStore'
+import { chatsService } from '@/services/chats'
+import { socketService } from '@/services/socket'
 import ReportModal from './components/ReportModal'
 import LeaveModal from './components/LeaveModal'
 import LocationPickerModal from './components/LocationPickerModal'
@@ -38,10 +41,13 @@ function isSameDay(a: string, b: string): boolean {
 export default function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const myId = user?.id ?? ''
   const {
     setCurrentRoom,
     markAsRead,
     sendMessage,
+    setMessages,
     getFilteredMessages,
     getCurrentRoom,
     getOpponent,
@@ -69,13 +75,41 @@ export default function ChatRoomPage() {
   const room = roomId ? getCurrentRoom() : undefined
   const opponent = roomId ? getOpponent(roomId) : undefined
 
+  // 메시지 로드 + 소켓 채팅방 참가
   useEffect(() => {
-    if (roomId) {
-      setCurrentRoom(roomId)
-      markAsRead(roomId)
+    if (!roomId) return
+    setCurrentRoom(roomId)
+
+    // 메시지 목록 API 로드
+    void chatsService.getMessages(roomId).then((msgs) => {
+      setMessages(roomId, msgs)
+    })
+
+    // 읽음 처리 (API + 로컬 상태)
+    void chatsService.markAsRead(roomId)
+    markAsRead(roomId)
+
+    // 소켓 채팅방 참가
+    socketService.joinChat(roomId)
+
+    // 상대방 메시지 실시간 수신
+    socketService.onNewMessage(({ chatId, message }) => {
+      if (chatId !== roomId) return
+      // 서버에서 전체 메시지 목록을 다시 불러와 동기화
+      void chatsService.getMessages(chatId).then((msgs) => {
+        setMessages(chatId, msgs)
+        void chatsService.markAsRead(chatId)
+        markAsRead(chatId)
+      })
+      void message // 미사용 변수 경고 억제
+    })
+
+    return () => {
+      socketService.leaveChat(roomId)
+      socketService.off('message.new')
+      setCurrentRoom(null)
     }
-    return () => setCurrentRoom(null)
-  }, [roomId, setCurrentRoom, markAsRead])
+  }, [roomId, setCurrentRoom, setMessages, markAsRead])
 
   // 새 메시지 수신 시 하단 스크롤
   useEffect(() => {
@@ -97,8 +131,11 @@ export default function ChatRoomPage() {
 
   function handleSend() {
     if (!roomId || !text.trim()) return
-    sendMessage(roomId, text.trim())
+    const content = text.trim()
     setText('')
+    // 낙관적 업데이트 후 API 전송
+    sendMessage(roomId, content)
+    void chatsService.sendMessage(roomId, content)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -136,7 +173,10 @@ export default function ChatRoomPage() {
 
   // 채팅방 나가기 확정 (No.85)
   function handleLeaveConfirm() {
-    if (roomId) leaveRoom(roomId)
+    if (roomId) {
+      leaveRoom(roomId)
+      void chatsService.leaveChat(roomId)
+    }
     closeLeaveModal()
     navigate('/chat')
   }
@@ -266,7 +306,7 @@ export default function ChatRoomPage() {
           <div className={styles.emptySearch}>검색 결과가 없습니다.</div>
         ) : (
           messages.map((msg, idx) => {
-            const isMine = msg.senderId === MOCK_ME.id
+            const isMine = msg.senderId === myId
             const prevMsg = messages[idx - 1]
             const showDivider = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt)
 
@@ -414,7 +454,12 @@ export default function ChatRoomPage() {
 
       {/* 신고 모달 (No.84) */}
       {reportModalOpen && (
-        <ReportModal onClose={closeReportModal} />
+        <ReportModal
+          onClose={closeReportModal}
+          onSubmit={async (reason) => {
+            if (roomId) await chatsService.reportChat(roomId, reason)
+          }}
+        />
       )}
 
       {/* 나가기 모달 (No.85) */}

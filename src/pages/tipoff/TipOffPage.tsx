@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MatchingResult } from '@/types'
+import { uploadService } from '@/services/upload'
+import { tipsService } from '@/services/tips'
 import Step1Upload from './steps/Step1Upload'
 import Step2Analyzing from './steps/Step2Analyzing'
 import Step3Results from './steps/Step3Results'
@@ -24,17 +26,45 @@ const BackIcon = () => (
   </svg>
 )
 
+// base64 data URL → File 변환
+const dataUrlToFile = (dataUrl: string, index: number): File => {
+  const [header, b64] = dataUrl.split(',')
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
+  const ext = mime.split('/')[1] ?? 'jpg'
+  const binary = atob(b64)
+  const buffer = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i)
+  return new File([buffer], `tip_photo_${index}.${ext}`, { type: mime })
+}
+
 export default function TipOffPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [form, setForm] = useState<TipOffFormData>(INITIAL_FORM)
   const [matchingResults, setMatchingResults] = useState<MatchingResult[]>([])
+  const [tipId, setTipId] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
 
   const update = (partial: Partial<TipOffFormData>) =>
     setForm((prev) => ({ ...prev, ...partial }))
 
-  // 분석 시작 → Step 2 (분석 중)
-  const handleStartAnalysis = () => setStep(2)
+  // 사진 업로드 → AI 분석 시작 → Step 2
+  const handleStartAnalysis = async () => {
+    setIsUploading(true)
+    setUploadError('')
+    try {
+      const files = form.photos.map(dataUrlToFile)
+      const imageUrls = await uploadService.uploadPetPhotos(files)
+      const { tipId: id } = await tipsService.analyzeTip(imageUrls)
+      setTipId(id)
+      setStep(2)
+    } catch {
+      setUploadError('업로드 또는 분석 요청에 실패했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   // 분석 완료 → Step 3 (결과 표시)
   const handleAnalysisComplete = (results: MatchingResult[]) => {
@@ -42,7 +72,6 @@ export default function TipOffPage() {
     setStep(3)
   }
 
-  // 뒤로가기
   const goBack = () => {
     if (step === 1) navigate('/')
     else if (step === 2) setStep(1)
@@ -67,13 +96,32 @@ export default function TipOffPage() {
 
       <main className={styles.main}>
         {step === 1 && (
-          <Step1Upload form={form} update={update} onStartAnalysis={handleStartAnalysis} />
+          <>
+            <Step1Upload
+              form={form}
+              update={update}
+              onStartAnalysis={handleStartAnalysis}
+              isUploading={isUploading}
+            />
+            {uploadError && (
+              <p style={{ color: 'var(--color-error)', textAlign: 'center', padding: '0.5rem' }}>
+                {uploadError}
+              </p>
+            )}
+          </>
         )}
         {step === 2 && (
-          <Step2Analyzing onComplete={handleAnalysisComplete} />
+          <Step2Analyzing
+            tipId={tipId ?? undefined}
+            onComplete={handleAnalysisComplete}
+          />
         )}
         {step === 3 && (
-          <Step3Results results={matchingResults} tipOffForm={form} />
+          <Step3Results
+            results={matchingResults}
+            tipOffForm={form}
+            tipId={tipId}
+          />
         )}
       </main>
     </div>

@@ -7,6 +7,7 @@ interface Props {
   form: TipOffFormData
   update: (partial: Partial<TipOffFormData>) => void
   onStartAnalysis: () => void
+  isUploading?: boolean
 }
 
 const MIN_PHOTOS = 3
@@ -40,7 +41,7 @@ const SearchIcon = () => (
 )
 
 // No.65 제보 사진 업로드 UI / No.66 촬영 가이드 / No.67 발견 위치 입력 / No.68 분석 준비 완료 표시
-export default function Step1Upload({ form, update, onStartAnalysis }: Props) {
+export default function Step1Upload({ form, update, onStartAnalysis, isUploading }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isCompressing, setIsCompressing] = useState(false)
 
@@ -218,11 +219,11 @@ export default function Step1Upload({ form, update, onStartAnalysis }: Props) {
         )}
         {/* No.69 유사도 검증 시작 버튼 */}
         <button
-          className={`${styles.analyzeBtn} ${!canAnalyze ? styles.disabled : ''}`}
+          className={`${styles.analyzeBtn} ${!canAnalyze || isUploading ? styles.disabled : ''}`}
           onClick={onStartAnalysis}
-          disabled={!canAnalyze}
+          disabled={!canAnalyze || isUploading}
         >
-          AI 유사도 검증 시작
+          {isUploading ? '업로드 중...' : 'AI 유사도 검증 시작'}
         </button>
       </div>
     </div>

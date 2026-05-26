@@ -1,5 +1,8 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useChatStore } from '@/stores/chatStore'
+import { chatsService } from '@/services/chats'
+import { socketService } from '@/services/socket'
 import styles from './ChatListPage.module.css'
 
 // 날짜/시간 포맷 유틸
@@ -18,8 +21,20 @@ function formatTime(iso: string): string {
 
 export default function ChatListPage() {
   const navigate = useNavigate()
-  const { roomSearchQuery, setRoomSearchQuery, getFilteredRooms, getOpponent } = useChatStore()
+  const { roomSearchQuery, setRoomSearchQuery, getFilteredRooms, getOpponent, setRooms } = useChatStore()
   const rooms = getFilteredRooms()
+
+  // 채팅방 목록 API 로드
+  useEffect(() => {
+    void chatsService.getChatList().then(setRooms)
+  }, [setRooms])
+
+  // 새 메시지 도착 시 채팅방 목록 갱신 (읽지 않은 수 업데이트)
+  useEffect(() => {
+    socketService.onNewMessage(() => {
+      void chatsService.getChatList().then(setRooms)
+    })
+  }, [setRooms])
 
   return (
     <div className={styles.container}>

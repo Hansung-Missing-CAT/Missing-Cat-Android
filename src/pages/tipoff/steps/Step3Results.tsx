@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MatchingResult } from '@/types'
 import type { TipOffFormData } from '../TipOffPage'
+import { tipsService } from '@/services/tips'
 import styles from './Step3Results.module.css'
 
 // types/index.ts에 TipOffFormData가 다르게 정의되어 있으므로 prop 타입은 TipOffPage의 것을 사용
 interface Props {
   results: MatchingResult[]
   tipOffForm: TipOffFormData
+  tipId: string | null
 }
 
 const SIMILARITY_COLORS: Record<string, string> = {
@@ -42,15 +44,23 @@ const ChevronIcon = () => (
 )
 
 // No.71 매칭 결과 목록 / No.72 상세 페이지 연결 / No.73 제보 전송 버튼
-export default function Step3Results({ results, tipOffForm }: Props) {
+export default function Step3Results({ results, tipOffForm, tipId }: Props) {
   const navigate = useNavigate()
   const [sentPostIds, setSentPostIds] = useState<Set<string>>(new Set())
+  const [sendingPostId, setSendingPostId] = useState<string | null>(null)
 
-  // No.73 보호자에게 제보 전송
-  const handleSend = (postId: string, e: React.MouseEvent) => {
+  // No.73 보호자에게 제보 전송 → 채팅방으로 이동
+  const handleSend = async (postId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    // TODO: API 연동 — 해당 반려인에게 알림/채팅 전송
-    setSentPostIds((prev) => new Set(prev).add(postId))
+    if (!tipId || sendingPostId === postId) return
+    setSendingPostId(postId)
+    try {
+      const { chatId } = await tipsService.sendTip(tipId, postId)
+      setSentPostIds((prev) => new Set(prev).add(postId))
+      navigate(`/chat/${chatId}`)
+    } catch {
+      setSendingPostId(null)
+    }
   }
 
   // No.72 매칭 결과 카드 → 상세 페이지 이동
@@ -154,11 +164,15 @@ export default function Step3Results({ results, tipOffForm }: Props) {
                 {/* No.73 제보 전송 버튼 */}
                 <button
                   className={`${styles.sendBtn} ${isSent ? styles.sendBtnDone : ''}`}
-                  onClick={(e) => handleSend(post.id, e)}
-                  disabled={isSent}
+                  onClick={(e) => { void handleSend(post.id, e) }}
+                  disabled={isSent || sendingPostId === post.id}
                 >
                   <SendIcon />
-                  {isSent ? '제보 전송 완료' : '보호자에게 제보 전송'}
+                  {isSent
+                    ? '제보 전송 완료'
+                    : sendingPostId === post.id
+                    ? '전송 중...'
+                    : '보호자에게 제보 전송'}
                 </button>
               </div>
             )

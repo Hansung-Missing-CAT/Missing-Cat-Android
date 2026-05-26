@@ -11,15 +11,23 @@ const REPORT_REASONS = [
 
 interface Props {
   onClose: () => void
+  onSubmit?: (reason: string) => Promise<void>
 }
 
 // 신고하기 모달 (No.84)
-export default function ReportModal({ onClose }: Props) {
+export default function ReportModal({ onClose, onSubmit }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!selected) return
+    setIsSubmitting(true)
+    try {
+      await onSubmit?.(selected)
+    } finally {
+      setIsSubmitting(false)
+    }
     setSubmitted(true)
   }
 
@@ -61,11 +69,11 @@ export default function ReportModal({ onClose }: Props) {
             <div className={styles.actions}>
               <button className={styles.cancelBtn} onClick={onClose}>취소</button>
               <button
-                className={`${styles.primaryBtn} ${!selected ? styles.disabled : ''}`}
-                disabled={!selected}
-                onClick={handleSubmit}
+                className={`${styles.primaryBtn} ${!selected || isSubmitting ? styles.disabled : ''}`}
+                disabled={!selected || isSubmitting}
+                onClick={() => { void handleSubmit() }}
               >
-                신고 제출
+                {isSubmitting ? '제출 중...' : '신고 제출'}
               </button>
             </div>
           </>
