@@ -8,6 +8,8 @@ import { FeedListSkeleton } from '@/components/Skeleton/Skeleton'
 import ErrorState from '@/components/ErrorState/ErrorState'
 import { useLocationStore } from '@/stores/locationStore'
 import { petsService } from '@/services/pets'
+import { notificationsService } from '@/services/notifications'
+import { useNotificationStore } from '@/stores/notificationStore'
 import type { MissingPost } from '@/types'
 import styles from './HomePage.module.css'
 
@@ -28,6 +30,14 @@ export default function HomePage() {
   const [hasError, setHasError] = useState(false)
   const [posts, setPosts] = useState<MissingPost[]>([])
   const { selectedDistrict } = useLocationStore()
+  const { setUnreadCount } = useNotificationStore()
+
+  // 앱 진입 시 미읽음 알림 수 갱신
+  useEffect(() => {
+    void notificationsService.getUnreadCount()
+      .then(setUnreadCount)
+      .catch(() => {})
+  }, [setUnreadCount])
 
   const loadPosts = useCallback(async () => {
     setIsLoading(true)

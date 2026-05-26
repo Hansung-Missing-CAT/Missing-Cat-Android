@@ -57,16 +57,18 @@ export const tipsService = {
     return res.data
   },
 
-  // 폴링 유틸: 2초 간격으로 getTipStatus 호출. 최대 60회(2분) 후 타임아웃.
+  // 폴링 유틸: 2초 간격으로 getTipStatus 호출.
+  // maxAttempts 기본값 150회(5분). AI 모델 로딩 등 초기 지연을 고려한 값.
   // 반환값은 폴링을 중단하는 cleanup 함수
   pollTipStatus: (
     tipId: string,
     onProgress: (progress: number) => void,
     onComplete: (results: MatchingResult[]) => void,
     onError: (msg?: string) => void,
+    maxAttempts = 150,
   ): (() => void) => {
     let count = 0
-    const MAX_ATTEMPTS = 60
+    const MAX_ATTEMPTS = maxAttempts
     let timerId: ReturnType<typeof setInterval> | null = null
 
     const poll = async () => {

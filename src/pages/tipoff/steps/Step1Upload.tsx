@@ -1,7 +1,19 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import type { TipOffFormData } from '../TipOffPage'
 import { compressImages } from '@/utils/imageOptimizer'
+import KakaoMap from '@/components/KakaoMap/KakaoMap'
+import { loadKakaoMap } from '@/utils/kakaoMap'
 import styles from './Step1Upload.module.css'
+
+// 카카오 Geocoder 응답 최소 타입
+interface KakaoAddressResult {
+  road_address: { address_name: string } | null
+  address: { address_name: string }
+}
+interface KakaoCoordResult {
+  x: string // 경도
+  y: string // 위도
+}
 
 interface Props {
   form: TipOffFormData
@@ -43,7 +55,52 @@ const SearchIcon = () => (
 // No.65 제보 사진 업로드 UI / No.66 촬영 가이드 / No.67 발견 위치 입력 / No.68 분석 준비 완료 표시
 export default function Step1Upload({ form, update, onStartAnalysis, isUploading }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isCompressing, setIsCompressing] = useState(false)
+
+  // 카카오맵 SDK 미리 로드
+  useEffect(() => {
+    void loadKakaoMap().catch(() => {})
+  }, [])
+
+  // 주소 텍스트 변경 시 지오코딩 → 지도 중심 이동 (디바운스 800ms)
+  useEffect(() => {
+    if (!form.address.trim()) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (!window.kakao?.maps?.services) return
+      const geocoder = new window.kakao.maps.services.Geocoder()
+      geocoder.addressSearch(
+        form.address,
+        (result: KakaoCoordResult[], status: string) => {
+          if (status === window.kakao.maps.services.Status.OK && result[0]) {
+            update({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) })
+          }
+        },
+      )
+    }, 800)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [form.address]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 지도 클릭 → 역지오코딩 → 주소 자동 입력
+  const handleMapClick = (lat: number, lng: number) => {
+    update({ lat, lng })
+    if (!window.kakao?.maps?.services) return
+    const geocoder = new window.kakao.maps.services.Geocoder()
+    geocoder.coord2Address(
+      lng,
+      lat,
+      (result: KakaoAddressResult[], status: string) => {
+        if (status === window.kakao.maps.services.Status.OK && result[0]) {
+          const address =
+            result[0].road_address?.address_name ?? result[0].address.address_name
+          update({ address })
+        }
+      },
+    )
+  }
 
   const canAnalyze = form.photos.length >= MIN_PHOTOS && form.address.trim().length > 0
   const photoReady = form.photos.length >= MIN_PHOTOS
@@ -191,12 +248,16 @@ export default function Step1Upload({ form, update, onStartAnalysis, isUploading
               />
             </div>
 
-            {/* 지도 플레이스홀더 (카카오맵 연동 전) */}
-            <div className={styles.mapPlaceholder}>
-              <span className={styles.mapEmoji}>🗺️</span>
-              <p className={styles.mapLabel}>지도에서 위치 선택</p>
-              <p className={styles.mapNote}>Phase 7 카카오맵 연동 후 이용 가능</p>
-            </div>
+            {/* 카카오맵 — 클릭 시 역지오코딩으로 주소 자동 입력 */}
+            <KakaoMap
+              lat={form.lat}
+              lng={form.lng}
+              level={4}
+              draggable
+              onClick={handleMapClick}
+              showCurrentMarker={form.lat !== undefined && form.lng !== undefined}
+              style={{ height: '200px', borderRadius: '12px' }}
+            />
           </div>
         </section>
 

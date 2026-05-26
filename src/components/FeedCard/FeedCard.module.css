@@ -89,6 +89,11 @@
   color: var(--color-text-secondary);
 }
 
+.author {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-disabled);
+}
+
 .location {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);

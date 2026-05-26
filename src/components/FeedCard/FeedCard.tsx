@@ -3,6 +3,8 @@ import axios from 'axios'
 import type { MissingPost } from '@/types'
 import LazyImage from '@/components/LazyImage/LazyImage'
 import { petsService } from '@/services/pets'
+import { useAuthStore } from '@/stores/authStore'
+import * as likeStorage from '@/utils/likeStorage'
 import styles from './FeedCard.module.css'
 
 interface FeedCardProps {
@@ -42,26 +44,48 @@ function getTimeAgo(dateStr: string): string {
 
 // 피드 카드 컴포넌트 (고양이 사진 + 기본 정보 + 좋아요/댓글)
 export default function FeedCard({ post, onClick }: FeedCardProps) {
-  const [liked, setLiked] = useState(post.isLiked ?? false)
+  // 초기 좋아요 상태: localStorage 우선 (백엔드 is_liked는 항상 undefined)
+  const [liked, setLiked] = useState(() => likeStorage.isLiked(post.id) || (post.isLiked ?? false))
   const [likeCount, setLikeCount] = useState(post.likeCount)
+  const { user } = useAuthStore()
 
-  // 낙관적 업데이트: UI 먼저 변경 → API 실패 시 롤백
+  // 작성자명: 빈값/'익명'이면 본인 게시글은 닉네임, 타인 게시글은 '작성자'로 표시
+  const displayAuthor =
+    post.authorNickname && post.authorNickname !== '익명'
+      ? post.authorNickname
+      : post.userId === user?.id
+        ? (user.nickname ?? '작성자')
+        : '작성자'
+
+  // 좋아요 토글 — API 응답 후 UI 확정, localStorage에 상태 영구 저장
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    const wasLiked = liked
-    setLiked(!wasLiked)
-    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1))
-    try {
-      if (wasLiked) {
+    if (liked) {
+      // 좋아요 취소: 성공/실패 모두 liked=false로 확정 (이미 취소 상태 포함)
+      try {
         await petsService.unlikePet(post.id)
-      } else {
-        await petsService.likePet(post.id)
+        setLikeCount((prev) => prev - 1)
+      } catch {
+        // 에러 시 count는 유지
+      } finally {
+        likeStorage.setUnliked(post.id)
+        setLiked(false)
       }
-    } catch (err) {
-      // 409: 서버 상태가 UI와 이미 일치 (ALREADY_LIKED 등) — 롤백 불필요
-      if (axios.isAxiosError(err) && err.response?.status === 409) return
-      setLiked(wasLiked)
-      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
+    } else {
+      // 좋아요: 성공 시 liked=true + count+1, 409는 이미 좋아요 상태로 확정
+      try {
+        await petsService.likePet(post.id)
+        likeStorage.setLiked(post.id)
+        setLiked(true)
+        setLikeCount((prev) => prev + 1)
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 409) {
+          // 409: 이미 좋아요 상태 — localStorage 동기화, count는 변경 안 함
+          likeStorage.setLiked(post.id)
+          setLiked(true)
+        }
+        // 그 외 에러: UI/localStorage 변경 없음
+      }
     }
   }
 
@@ -96,6 +120,7 @@ export default function FeedCard({ post, onClick }: FeedCardProps) {
           <span className={styles.petName}>{post.petName}</span>
           <span className={styles.species}>{post.species}</span>
         </div>
+        <p className={styles.author}>{displayAuthor}</p>
         <p className={styles.location}>📍 {post.location.address}</p>
         <div className={styles.bottomRow}>
           <span className={styles.reward}>

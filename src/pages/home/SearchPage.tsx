@@ -44,6 +44,7 @@ function removeRecentSearch(keyword: string) {
 export default function SearchPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecentSearches)
@@ -53,6 +54,21 @@ export default function SearchPage() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  // 타이핑 디바운스 (300ms) — 폼 제출/최근검색 클릭은 즉시 반영
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!query.trim()) {
+      setSubmittedQuery('')
+      return
+    }
+    debounceRef.current = setTimeout(() => {
+      setSubmittedQuery(query.trim())
+    }, 300)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query])
 
   // submittedQuery 변경 시 API 검색
   useEffect(() => {
@@ -69,6 +85,7 @@ export default function SearchPage() {
   const search = (keyword: string) => {
     const trimmed = keyword.trim()
     if (!trimmed) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     saveRecentSearch(trimmed)
     setRecentSearches(getRecentSearches())
     setQuery(trimmed)

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { petsService } from '@/services/pets'
+import * as likeStorage from '@/utils/likeStorage'
 import Modal, { ModalActions } from '@/components/Modal/Modal'
 import KakaoMap from '@/components/KakaoMap/KakaoMap'
 import { loadKakaoMap } from '@/utils/kakaoMap'
@@ -74,7 +75,8 @@ export default function PostDetailPage() {
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
-  const [liked, setLiked] = useState(false)
+  // 초기 좋아요 상태: localStorage 우선 (백엔드 is_liked는 항상 undefined)
+  const [liked, setLiked] = useState(() => id ? likeStorage.isLiked(id) : false)
   const [likeCount, setLikeCount] = useState(0)
   const [postStatus, setPostStatus] = useState<MissingStatus>('missing')
   const [commentText, setCommentText] = useState('')
@@ -117,7 +119,8 @@ export default function PostDetailPage() {
         ])
         setPost(fetchedPost)
         setComments(fetchedComments ?? [])
-        setLiked(fetchedPost.isLiked ?? false)
+        // localStorage 우선, API에 is_liked가 없으면 localStorage 값 유지
+        setLiked(likeStorage.isLiked(id) || (fetchedPost.isLiked ?? false))
         setLikeCount(fetchedPost.likeCount)
         setPostStatus(fetchedPost.status)
       } catch {
@@ -143,27 +146,39 @@ export default function PostDetailPage() {
   }
 
   const isMyPost = Boolean(user && user.id === post.userId)
-  // 본인 게시글인데 authorNickname이 비어 있으면 authStore 닉네임을 우선 표시
+  // 작성자명: 본인 게시글은 authStore 닉네임 우선, 타인 게시글은 '익명' 대신 '작성자' fallback
   const displayAuthorName = isMyPost
     ? (user?.nickname || post.authorNickname || '나')
-    : (post.authorNickname || '익명')
+    : (post.authorNickname && post.authorNickname !== '익명' ? post.authorNickname : '작성자')
 
-  // 낙관적 업데이트: UI 먼저 변경 → API 실패 시 롤백
+  // 좋아요 토글 — API 응답 후 UI 확정, localStorage에 상태 영구 저장
   const handleLike = async () => {
-    const wasLiked = liked
-    setLiked(!wasLiked)
-    setLikeCount((prev) => (wasLiked ? prev - 1 : prev + 1))
-    try {
-      if (wasLiked) {
+    if (liked) {
+      // 좋아요 취소: 성공/실패 모두 liked=false로 확정 (이미 취소 상태 포함)
+      try {
         await petsService.unlikePet(post.id)
-      } else {
-        await petsService.likePet(post.id)
+        setLikeCount((prev) => prev - 1)
+      } catch {
+        // 에러 시 count는 유지
+      } finally {
+        likeStorage.setUnliked(post.id)
+        setLiked(false)
       }
-    } catch (err) {
-      // 409: 서버 상태가 UI와 이미 일치 (ALREADY_LIKED 등) — 롤백 불필요
-      if (axios.isAxiosError(err) && err.response?.status === 409) return
-      setLiked(wasLiked)
-      setLikeCount((prev) => (wasLiked ? prev + 1 : prev - 1))
+    } else {
+      // 좋아요: 성공 시 liked=true + count+1, 409는 이미 좋아요 상태로 확정
+      try {
+        await petsService.likePet(post.id)
+        likeStorage.setLiked(post.id)
+        setLiked(true)
+        setLikeCount((prev) => prev + 1)
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 409) {
+          // 409: 이미 좋아요 상태 — localStorage 동기화, count는 변경 안 함
+          likeStorage.setLiked(post.id)
+          setLiked(true)
+        }
+        // 그 외 에러: UI/localStorage 변경 없음
+      }
     }
   }
 

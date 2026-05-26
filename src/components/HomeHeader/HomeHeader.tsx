@@ -38,8 +38,7 @@ const SettingsIcon = () => (
 export default function HomeHeader({ onDistrictClick }: HomeHeaderProps) {
   const navigate = useNavigate()
   const { selectedDistrict } = useLocationStore()
-  const { notifications } = useNotificationStore()
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const { unreadCount } = useNotificationStore()
 
   return (
     <header className={styles.header}>

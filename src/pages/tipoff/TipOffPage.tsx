@@ -12,12 +12,16 @@ export interface TipOffFormData {
   photos: string[]
   address: string
   detailAddress: string
+  lat?: number
+  lng?: number
 }
 
 const INITIAL_FORM: TipOffFormData = {
   photos: [],
   address: '',
   detailAddress: '',
+  lat: undefined,
+  lng: undefined,
 }
 
 const BackIcon = () => (
