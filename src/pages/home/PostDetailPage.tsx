@@ -4,9 +4,17 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { petsService } from '@/services/pets'
 import Modal, { ModalActions } from '@/components/Modal/Modal'
+import KakaoMap from '@/components/KakaoMap/KakaoMap'
+import { loadKakaoMap } from '@/utils/kakaoMap'
 import type { MissingPost, Comment, MissingStatus } from '@/types'
 import { toBackendStatus } from '@/utils/transform'
 import styles from './PostDetailPage.module.css'
+
+// 카카오 Geocoder 응답 최소 타입
+interface KakaoCoordResult {
+  x: string // 경도
+  y: string // 위도
+}
 
 const BackIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -72,6 +80,30 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState('')
   const [photoIndex, setPhotoIndex] = useState(0)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null)
+
+  // post 로드 완료 후 지도 좌표 결정 (lat/lng 없으면 주소로 지오코딩)
+  useEffect(() => {
+    if (!post) return
+    if (post.location.lat !== undefined && post.location.lng !== undefined) {
+      setMapCoords({ lat: post.location.lat, lng: post.location.lng })
+      return
+    }
+    if (!post.location.address) return
+    loadKakaoMap()
+      .then(() => {
+        const geocoder = new window.kakao.maps.services.Geocoder()
+        geocoder.addressSearch(
+          post.location.address,
+          (result: KakaoCoordResult[], status: string) => {
+            if (status === window.kakao.maps.services.Status.OK && result[0]) {
+              setMapCoords({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) })
+            }
+          },
+        )
+      })
+      .catch(() => {})
+  }, [post])
 
   useEffect(() => {
     if (!id) return
@@ -272,11 +304,24 @@ export default function PostDetailPage() {
           </div>
         </section>
 
-        {/* 지도 placeholder */}
-        <div className={styles.mapPlaceholder}>
-          <p className={styles.mapAddress}>📍 {post.location.address}</p>
-          <p className={styles.mapNote}>지도는 카카오맵 연동 후 표시됩니다</p>
-        </div>
+        {/* 실종 위치 지도 */}
+        {mapCoords ? (
+          <KakaoMap
+            lat={mapCoords.lat}
+            lng={mapCoords.lng}
+            level={4}
+            draggable={false}
+            showCurrentMarker
+            style={{ margin: '0 var(--spacing-4) var(--spacing-4)', borderRadius: '12px' }}
+          />
+        ) : (
+          <div className={styles.mapPlaceholder}>
+            <p className={styles.mapAddress}>📍 {post.location.address}</p>
+            <p className={styles.mapNote}>
+              {post.location.address ? '지도를 불러오는 중...' : '위치 정보 없음'}
+            </p>
+          </div>
+        )}
 
         {/* 제보/전화 버튼 */}
         <div className={styles.actionButtons}>

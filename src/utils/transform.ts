@@ -179,6 +179,8 @@ export const toBackendPet = (
     description: string
     address: string
     detailAddress: string
+    lat?: number
+    lng?: number
     lostDate: string
     lostTimezone: string
     reward: number
@@ -200,6 +202,8 @@ export const toBackendPet = (
     district,
     location: form.address,
     detailAddress: form.detailAddress || undefined,
+    latitude: form.lat,
+    longitude: form.lng,
     lostDate: form.lostDate,
     lostTime: timezoneToTime(form.lostTimezone),
     reward: form.reward,

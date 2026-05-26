@@ -1,4 +1,7 @@
+import { useEffect, useRef } from 'react'
 import type { ReportFormData } from '../ReportPage'
+import KakaoMap from '@/components/KakaoMap/KakaoMap'
+import { loadKakaoMap } from '@/utils/kakaoMap'
 import styles from './Step1Location.module.css'
 
 interface Props {
@@ -7,25 +10,85 @@ interface Props {
   onNext: () => void
 }
 
-const PinIcon = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
-  </svg>
-)
+// 카카오 Geocoder 응답 최소 타입
+interface KakaoAddressResult {
+  road_address: { address_name: string } | null
+  address: { address_name: string }
+}
+interface KakaoCoordResult {
+  x: string // 경도
+  y: string // 위도
+}
 
-// No.47 주소 직접 입력 폼 / No.48 주소 입력 UI
+// No.47 지도 기반 위치 선택 + No.48 주소 입력 UI
 export default function Step1Location({ form, update, onNext }: Props) {
   const canNext = form.address.trim().length > 0
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 카카오맵 SDK 미리 로드
+  useEffect(() => {
+    void loadKakaoMap().catch(() => {})
+  }, [])
+
+  // 주소 텍스트 변경 시 지오코딩 → 지도 중심 이동 (디바운스 800ms)
+  useEffect(() => {
+    if (!form.address.trim()) return
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (!window.kakao?.maps?.services) return
+      const geocoder = new window.kakao.maps.services.Geocoder()
+      geocoder.addressSearch(
+        form.address,
+        (result: KakaoCoordResult[], status: string) => {
+          if (status === window.kakao.maps.services.Status.OK && result[0]) {
+            update({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) })
+          }
+        },
+      )
+    }, 800)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [form.address]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 지도 클릭 → 역지오코딩 → 주소 자동 입력
+  const handleMapClick = (lat: number, lng: number) => {
+    update({ lat, lng })
+    if (!window.kakao?.maps?.services) return
+    const geocoder = new window.kakao.maps.services.Geocoder()
+    geocoder.coord2Address(
+      lng,
+      lat,
+      (result: KakaoAddressResult[], status: string) => {
+        if (status === window.kakao.maps.services.Status.OK && result[0]) {
+          const address =
+            result[0].road_address?.address_name ?? result[0].address.address_name
+          update({ address })
+        }
+      },
+    )
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.hero}>
-          <PinIcon />
           <h2 className={styles.stepTitle}>실종 위치를 알려주세요</h2>
-          <p className={styles.stepDesc}>반려동물이 마지막으로 목격된 위치를 입력해주세요</p>
+          <p className={styles.stepDesc}>지도를 탭하거나 주소를 직접 입력하세요</p>
         </div>
+
+        {/* 카카오맵 — 클릭 시 역지오코딩으로 주소 자동 입력 */}
+        <KakaoMap
+          lat={form.lat}
+          lng={form.lng}
+          level={4}
+          draggable
+          onClick={handleMapClick}
+          showCurrentMarker={form.lat !== undefined && form.lng !== undefined}
+          style={{ height: '240px', marginBottom: 'var(--spacing-4)', borderRadius: '12px' }}
+        />
 
         <div className={styles.form}>
           <div className={styles.field}>
@@ -53,13 +116,6 @@ export default function Step1Location({ form, update, onNext }: Props) {
               onChange={(e) => update({ detailAddress: e.target.value })}
             />
           </div>
-        </div>
-
-        {/* No.47 지도 기반 위치 선택 — 카카오맵 연동 후 활성화 */}
-        <div className={styles.mapPlaceholder}>
-          <span className={styles.mapEmoji}>🗺️</span>
-          <p className={styles.mapTitle}>지도에서 위치 선택</p>
-          <p className={styles.mapNote}>카카오맵 연동 후 이용 가능합니다</p>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import HomeHeader from '@/components/HomeHeader/HomeHeader'
 import DistrictModal from '@/components/DistrictModal/DistrictModal'
 import FeedCard from '@/components/FeedCard/FeedCard'
+import KakaoMap, { type MapMarker } from '@/components/KakaoMap/KakaoMap'
 import { FeedListSkeleton } from '@/components/Skeleton/Skeleton'
 import ErrorState from '@/components/ErrorState/ErrorState'
 import { useLocationStore } from '@/stores/locationStore'
@@ -52,15 +53,56 @@ export default function HomePage() {
     navigate(`/post/${post.id}`)
   }
 
+  // 지도 인포윈도우 내 [data-postid] 클릭 시 상세 페이지 이동
+  useEffect(() => {
+    if (!isMapView) return
+    const handleDocClick = (e: MouseEvent) => {
+      const el = (e.target as Element).closest('[data-postid]')
+      if (el) {
+        const postId = el.getAttribute('data-postid')
+        if (postId) navigate(`/post/${postId}`)
+      }
+    }
+    document.addEventListener('click', handleDocClick)
+    return () => document.removeEventListener('click', handleDocClick)
+  }, [isMapView, navigate])
+
   const renderContent = () => {
     if (isLoading) return <FeedListSkeleton count={5} />
     if (hasError) return <ErrorState message="게시글을 불러오지 못했어요." onRetry={loadPosts} />
     if (isMapView) {
+      // 좌표 있는 게시글만 마커로 표시
+      const mapMarkers: MapMarker[] = posts
+        .filter((p) => p.location.lat !== undefined && p.location.lng !== undefined)
+        .map((p) => ({
+          lat: p.location.lat!,
+          lng: p.location.lng!,
+          // 인포윈도우 HTML — data-postid 속성으로 클릭 시 상세 페이지 이동
+          title: `
+            <div data-postid="${p.id}" style="
+              display:flex;align-items:center;gap:8px;
+              padding:8px 10px;cursor:pointer;min-width:170px;
+            ">
+              ${p.images[0]
+                ? `<img src="${p.images[0]}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;" />`
+                : ''}
+              <div>
+                <p style="font-weight:700;font-size:13px;margin:0 0 2px;">${p.petName}</p>
+                <p style="font-size:12px;color:#666;margin:0;">${p.species}</p>
+                <p style="font-size:11px;color:#D32F2F;margin:3px 0 0;">탭하여 상세보기</p>
+              </div>
+            </div>
+          `,
+        }))
+
       return (
-        <div className={styles.mapPlaceholder}>
-          <p className={styles.mapText}>🗺</p>
-          <p>지도 뷰는 카카오맵 API 연동 후 구현됩니다</p>
-        </div>
+        <KakaoMap
+          markers={mapMarkers}
+          level={7}
+          draggable
+          className={styles.mapFull}
+          style={{ height: 'calc(100vh - 200px)', borderRadius: 0 }}
+        />
       )
     }
     if (posts.length === 0) {

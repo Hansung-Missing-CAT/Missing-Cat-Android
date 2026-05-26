@@ -14,6 +14,8 @@ import styles from './ReportPage.module.css'
 export interface ReportFormData {
   address: string
   detailAddress: string
+  lat?: number  // 지도 클릭으로 선택된 위도
+  lng?: number  // 지도 클릭으로 선택된 경도
   photos: string[]
   petName: string
   species: string
@@ -29,7 +31,7 @@ export interface ReportFormData {
 const STEP_LABELS = ['위치', '사진', '정보', '시기', '사례금']
 
 const INITIAL_FORM: ReportFormData = {
-  address: '', detailAddress: '', photos: [],
+  address: '', detailAddress: '', lat: undefined, lng: undefined, photos: [],
   petName: '', species: '', age: '', gender: '', furColor: '', description: '',
   lostDate: '', lostTimezone: '', reward: 0,
 }
