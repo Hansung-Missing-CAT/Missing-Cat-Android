@@ -132,3 +132,22 @@ export interface Paginated<T> {
   limit: number
   hasMore: boolean
 }
+
+// 백엔드 에러 응답
+export interface ApiError {
+  code: string
+  message: string
+  fields?: Record<string, string>
+}
+
+// 제보 분석 상태
+export type TipStatus = 'processing' | 'done' | 'error'
+
+// 제보 분석 응답
+export interface TipAnalysis {
+  tipId: string
+  status: TipStatus
+  progress?: number
+  results?: MatchingResult[]
+  errorMsg?: string
+}

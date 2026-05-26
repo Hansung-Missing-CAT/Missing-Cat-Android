@@ -90,14 +90,14 @@ export default function RegisterPage() {
     setIsLoading(true)
     setServerError('')
     try {
-      const res = await authService.register({
+      await authService.signup({
         email: form.email,
         password: form.password,
-        nickname: form.nickname,
+        name: form.nickname,
+        agreeTerms: true,
+        agreePrivacy: true,
       })
-      const { user, accessToken } = res.data.data
-      setAuth(user, accessToken)
-      navigate('/', { replace: true })
+      navigate('/login', { replace: true })
     } catch {
       // API 미연동 시 목 사용자로 처리
       const mockUser = {

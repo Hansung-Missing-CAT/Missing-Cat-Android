@@ -51,8 +51,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setServerError('')
     try {
-      const res = await authService.login({ email, password })
-      const { user, accessToken } = res.data.data
+      const { user, accessToken } = await authService.login({ email, password })
       setAuth(user, accessToken)
       navigate('/', { replace: true })
     } catch {
