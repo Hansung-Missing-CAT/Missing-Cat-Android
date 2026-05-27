@@ -36,7 +36,10 @@ export const tipsService = {
     results?: MatchingResult[]
     errorMsg?: string
   }> => {
-    const res = await apiClient.get<BackendTipStatus>(`/tips/${tipId}`)
+    const res = await apiClient.get<BackendTipStatus>(`/tips/${tipId}`, {
+      headers: { 'Cache-Control': 'no-cache' },
+      params: { _t: Date.now() },
+    })
     const { status, progress, results, errorMsg } = res.data
     return {
       tipId,
