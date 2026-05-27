@@ -65,7 +65,7 @@ export const tipsService = {
     onProgress: (progress: number) => void,
     onComplete: (results: MatchingResult[]) => void,
     onError: (msg?: string) => void,
-    maxAttempts = 150,
+    maxAttempts = 90,
   ): (() => void) => {
     let count = 0
     const MAX_ATTEMPTS = maxAttempts
