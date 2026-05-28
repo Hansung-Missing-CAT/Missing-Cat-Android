@@ -27,6 +27,7 @@ interface ChatState {
   setSearchQuery: (q: string) => void
   setRoomSearchQuery: (q: string) => void
   setRooms: (rooms: ChatRoom[]) => void
+  addOrUpdateRoom: (room: ChatRoom) => void
   setMessages: (roomId: string, messages: ChatMessage[]) => void
   sendMessage: (roomId: string, content: string, type?: ChatMessage['type'], extra?: Partial<ChatMessage>) => void
   markAsRead: (roomId: string) => void
@@ -58,6 +59,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // API에서 받아온 채팅방 목록으로 교체
   setRooms: (rooms) => set({ rooms }),
+
+  // 단일 채팅방 추가 또는 갱신 (sendTip 후 새 채팅방을 스토어에 반영할 때 사용)
+  addOrUpdateRoom: (room) =>
+    set((state) => ({
+      rooms: state.rooms.some((r) => r.id === room.id)
+        ? state.rooms.map((r) => (r.id === room.id ? room : r))
+        : [...state.rooms, room],
+    })),
 
   // API에서 받아온 메시지 목록으로 교체
   setMessages: (roomId, messages) =>

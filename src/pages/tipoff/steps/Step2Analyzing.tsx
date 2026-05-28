@@ -45,9 +45,9 @@ export default function Step2Analyzing({ tipId, onComplete }: Props) {
         if (id !== tipId) return
         socketService.off('tip.progress')
         socketService.off('tip.complete')
-        // 소켓 결과는 변환 없이 직접 완료 처리 (백엔드 포맷이면 tipsService.getTipStatus 결과 사용)
+        updateStage(100)
         void tipsService.getTipStatus(tipId).then((res) => {
-          if (res.status === 'done') onComplete(res.results ?? [])
+          if (res.status === 'done') setTimeout(() => onComplete(res.results ?? []), 500)
         })
       })
 
@@ -58,7 +58,8 @@ export default function Step2Analyzing({ tipId, onComplete }: Props) {
         (results) => {
           socketService.off('tip.progress')
           socketService.off('tip.complete')
-          onComplete(results)
+          updateStage(100)
+          setTimeout(() => onComplete(results), 500)
         },
         (msg) => setErrorMsg(msg ?? '분석 중 오류가 발생했습니다.'),
       )

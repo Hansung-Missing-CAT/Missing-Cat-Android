@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useChatStore } from '@/stores/chatStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -51,6 +51,7 @@ export default function ChatRoomPage() {
     getFilteredMessages,
     getCurrentRoom,
     getOpponent,
+    addOrUpdateRoom,
     searchQuery,
     setSearchQuery,
     reportModalOpen,
@@ -64,6 +65,12 @@ export default function ChatRoomPage() {
 
   // 상대방 이름 재조회 결과 — other_user_name이 null이면 API 재조회로 갱신
   const [refreshedOpponentName, setRefreshedOpponentName] = useState<string | null>(null)
+
+  // sendTip 직후 navigate 시 스토어에 방이 없을 수 있으므로 API로 로드 중 여부
+  const [isRoomLoading, setIsRoomLoading] = useState(() => {
+    if (!roomId) return false
+    return !useChatStore.getState().rooms.some((r) => r.id === roomId)
+  })
 
   const [text, setText] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -120,6 +127,20 @@ export default function ChatRoomPage() {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages.length, msgSearchMode])
+
+  // 스토어에 채팅방이 없으면 API로 가져와 추가 (sendTip 후 직접 navigate 시 발생)
+  const loadRoomFromApi = useCallback(() => {
+    if (!roomId) { setIsRoomLoading(false); return }
+    void chatsService.getChat(roomId)
+      .then((fetchedRoom) => { addOrUpdateRoom(fetchedRoom) })
+      .catch(() => {})
+      .finally(() => { setIsRoomLoading(false) })
+  }, [roomId, addOrUpdateRoom])
+
+  useEffect(() => {
+    if (!isRoomLoading) return
+    loadRoomFromApi()
+  }, [isRoomLoading, loadRoomFromApi])
 
   // 상대방 이름이 불명확하면 채팅방 API 재조회해서 이름 갱신
   useEffect(() => {
@@ -194,6 +215,14 @@ export default function ChatRoomPage() {
     }
     closeLeaveModal()
     navigate('/chat')
+  }
+
+  if (isRoomLoading) {
+    return (
+      <div className={styles.notFound}>
+        <p>채팅방을 불러오는 중...</p>
+      </div>
+    )
   }
 
   if (!room) {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MatchingResult } from '@/types'
 import { uploadService } from '@/services/upload'
@@ -71,10 +71,12 @@ export default function TipOffPage() {
   }
 
   // 분석 완료 → Step 3 (결과 표시)
-  const handleAnalysisComplete = (results: MatchingResult[]) => {
+  // useCallback으로 참조 안정화: 미적용 시 isUploading 변경마다 재렌더링되어
+  // Step2Analyzing의 useEffect가 재실행되고 polling이 즉시 done을 감지해 조기 전환됨
+  const handleAnalysisComplete = useCallback((results: MatchingResult[]) => {
     setMatchingResults(results)
     setStep(3)
-  }
+  }, [])
 
   const goBack = () => {
     if (step === 1) navigate('/')
