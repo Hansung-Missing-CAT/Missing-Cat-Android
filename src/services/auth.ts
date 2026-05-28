@@ -85,8 +85,8 @@ export const authService = {
   },
 
   // Google 로그인 — GIS에서 받은 idToken을 백엔드로 전달
-  googleLogin: async (idToken: string): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
-    const res = await apiClient.post<LoginResponse>('/auth/login/google', { idToken })
+  googleLogin: async (idToken: string, nonce?: string): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
+    const res = await apiClient.post<LoginResponse>('/auth/login/google', { idToken, nonce })
     const { accessToken, refreshToken, user } = res.data
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('refreshToken', refreshToken)

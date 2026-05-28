@@ -75,14 +75,14 @@ export default function LoginPage() {
 
     const params = new URLSearchParams(hash.slice(1))
     const idToken = params.get('id_token')
-
-    // 해시 제거 — 새로고침 시 재처리 방지
-    window.history.replaceState(null, '', window.location.pathname)
-
     if (!idToken) return
 
+    const nonce = sessionStorage.getItem('google_nonce') || undefined
+    sessionStorage.removeItem('google_nonce')
+    window.history.replaceState(null, '', window.location.pathname)
+
     setIsLoading(true)
-    authService.googleLogin(idToken)
+    authService.googleLogin(idToken, nonce)
       .then(({ user, accessToken }) => {
         setAuth(user, accessToken)
         navigate('/', { replace: true })
@@ -94,17 +94,28 @@ export default function LoginPage() {
   }, [])
 
   // Google 버튼 클릭 — OAuth2 팝업 리다이렉트로 계정 선택
-  const handleGoogleLogin = () => {
+  // Supabase는 nonce의 SHA-256 해시를 기대하므로, Google URL에는 해시된 nonce를 전달하고
+  // Supabase 검증용 원본 nonce는 sessionStorage에 보관한다
+  const handleGoogleLogin = async () => {
     const clientId = '472161282624-unctbr8cfum2l195ufaoeqpcgcvdf8rb.apps.googleusercontent.com'
     const redirectUri = `${window.location.origin}/login`
+
     const nonce = Math.random().toString(36).slice(2)
+    sessionStorage.setItem('google_nonce', nonce)
+
+    const encoder = new TextEncoder()
+    const data = encoder.encode(nonce)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashedNonce = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
     const url =
       `https://accounts.google.com/o/oauth2/v2/auth` +
       `?client_id=${clientId}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&response_type=id_token` +
       `&scope=openid%20email%20profile` +
-      `&nonce=${nonce}`
+      `&nonce=${hashedNonce}`
     window.location.href = url
   }
 
