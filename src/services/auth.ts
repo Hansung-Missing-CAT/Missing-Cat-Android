@@ -84,6 +84,15 @@ export const authService = {
     return toFrontendUser(res.data)
   },
 
+  // Google 로그인 — GIS에서 받은 idToken을 백엔드로 전달
+  googleLogin: async (idToken: string): Promise<{ user: User; accessToken: string; refreshToken: string }> => {
+    const res = await apiClient.post<LoginResponse>('/auth/login/google', { idToken })
+    const { accessToken, refreshToken, user } = res.data
+    localStorage.setItem('accessToken', accessToken)
+    localStorage.setItem('refreshToken', refreshToken)
+    return { user: toFrontendUser(user), accessToken, refreshToken }
+  },
+
   // 비밀번호 재설정 이메일 발송
   sendResetEmail: async (email: string): Promise<void> => {
     await apiClient.post('/auth/password/forgot', { email })

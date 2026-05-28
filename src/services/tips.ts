@@ -13,11 +13,19 @@ interface BackendTipResult {
   pet: BackendPet
 }
 
+// 백엔드 results 컬럼 구조: {breed, confidence, featureText, topMatches: [...]}
+interface BackendTipResults {
+  breed: string | null
+  confidence: number
+  featureText: string
+  topMatches: BackendTipResult[]
+}
+
 interface BackendTipStatus {
   tipId: string
   status: TipStatus
   progress?: number
-  results?: BackendTipResult[]
+  results?: BackendTipResults
   errorMsg?: string | null
 }
 
@@ -45,7 +53,7 @@ export const tipsService = {
       tipId,
       status,
       progress,
-      results: results?.map((r) => ({
+      results: results?.topMatches?.map((r) => ({
         postId: r.petId,
         post: toFrontendPet(r.pet),
         similarityScore: r.similarity,
@@ -86,7 +94,7 @@ export const tipsService = {
         if (result.status === 'done') {
           if (timerId) clearInterval(timerId)
           onComplete(result.results ?? [])
-        } else if (result.status === 'error') {
+        } else if (result.status === 'failed' || result.status === 'error') {
           if (timerId) clearInterval(timerId)
           onError(result.errorMsg)
         } else {

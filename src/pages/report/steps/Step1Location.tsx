@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import type { ReportFormData } from '../ReportPage'
 import KakaoMap from '@/components/KakaoMap/KakaoMap'
 import { loadKakaoMap } from '@/utils/kakaoMap'
+import AddressSearch from '@/components/AddressSearch/AddressSearch'
 import styles from './Step1Location.module.css'
 
 interface Props {
@@ -10,48 +11,20 @@ interface Props {
   onNext: () => void
 }
 
-// 카카오 Geocoder 응답 최소 타입
+// 카카오 Geocoder 응답 최소 타입 (지도 클릭 역지오코딩용)
 interface KakaoAddressResult {
   road_address: { address_name: string } | null
   address: { address_name: string }
-}
-interface KakaoCoordResult {
-  x: string // 경도
-  y: string // 위도
 }
 
 // No.47 지도 기반 위치 선택 + No.48 주소 입력 UI
 export default function Step1Location({ form, update, onNext }: Props) {
   const canNext = form.address.trim().length > 0
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 카카오맵 SDK 미리 로드
   useEffect(() => {
     void loadKakaoMap().catch(() => {})
   }, [])
-
-  // 주소 텍스트 변경 시 지오코딩 → 지도 중심 이동 (디바운스 800ms)
-  useEffect(() => {
-    if (!form.address.trim()) return
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      if (!window.kakao?.maps?.services) return
-      const geocoder = new window.kakao.maps.services.Geocoder()
-      geocoder.addressSearch(
-        form.address,
-        (result: KakaoCoordResult[], status: string) => {
-          if (status === window.kakao.maps.services.Status.OK && result[0]) {
-            update({ lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) })
-          }
-        },
-      )
-    }, 800)
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [form.address]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 지도 클릭 → 역지오코딩 → 주소 자동 입력
   const handleMapClick = (lat: number, lng: number) => {
@@ -95,12 +68,12 @@ export default function Step1Location({ form, update, onNext }: Props) {
             <label className={styles.label}>
               주소 <span className={styles.required}>*</span>
             </label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="예: 서울시 마포구 합정동"
+            {/* AddressSearch: 카카오 Places 검색으로 직접 좌표 반환 */}
+            <AddressSearch
               value={form.address}
-              onChange={(e) => update({ address: e.target.value })}
+              onChange={(value) => update({ address: value })}
+              onSelect={(address, lat, lng) => update({ address, lat, lng })}
+              placeholder="예: 서울시 마포구 합정동"
             />
           </div>
 

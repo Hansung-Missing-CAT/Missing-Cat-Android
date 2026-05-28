@@ -62,6 +62,9 @@ export default function ChatRoomPage() {
     leaveRoom,
   } = useChatStore()
 
+  // 상대방 이름 재조회 결과 — other_user_name이 null이면 API 재조회로 갱신
+  const [refreshedOpponentName, setRefreshedOpponentName] = useState<string | null>(null)
+
   const [text, setText] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
@@ -117,6 +120,18 @@ export default function ChatRoomPage() {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages.length, msgSearchMode])
+
+  // 상대방 이름이 불명확하면 채팅방 API 재조회해서 이름 갱신
+  useEffect(() => {
+    const name = opponent?.nickname
+    if (!roomId || (name && name !== '상대방' && name !== '알 수 없음')) return
+    void chatsService.getChat(roomId).then((updatedRoom) => {
+      const other = updatedRoom.participants.find((p) => p.id !== myId)
+      if (other?.nickname && other.nickname !== '상대방') {
+        setRefreshedOpponentName(other.nickname)
+      }
+    }).catch(() => {})
+  }, [roomId, opponent?.nickname, myId])
 
   // 메뉴 외부 클릭 시 닫기
   useEffect(() => {
@@ -185,7 +200,7 @@ export default function ChatRoomPage() {
     return (
       <div className={styles.notFound}>
         <p>채팅방을 찾을 수 없습니다.</p>
-        <button onClick={() => navigate('/chat')} className={styles.backBtn}>
+        <button onClick={() => navigate('/chat')} className={styles.backBtn} style={{ whiteSpace: 'nowrap' }}>
           목록으로
         </button>
       </div>
@@ -203,14 +218,32 @@ export default function ChatRoomPage() {
         </button>
 
         <div className={styles.headerInfo}>
-          <span className={styles.opponentName}>{opponent?.nickname ?? '알 수 없음'}</span>
+          <span className={styles.opponentName}>
+            {refreshedOpponentName ?? opponent?.nickname ?? '알 수 없음'}
+          </span>
+          {/* pet_name이 있으면 관련 게시글 컨텍스트 표시 */}
+          {room.relatedPost?.petName && (
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+              {room.relatedPost.petName} 관련 대화
+            </span>
+          )}
           {room.relatedPost && (
             <div className={styles.postMeta}>
-              <span className={styles.speciesTag}>{room.relatedPost.species}</span>
-              <span className={styles.metaDivider}>·</span>
+              {/* species가 빈 문자열이면 태그 숨김 */}
+              {room.relatedPost.species && (
+                <>
+                  <span className={styles.speciesTag}>{room.relatedPost.species}</span>
+                  <span className={styles.metaDivider}>·</span>
+                </>
+              )}
               <span>{room.relatedPost.location.address}</span>
-              <span className={styles.metaDivider}>·</span>
-              <span>{room.relatedPost.reward.toLocaleString()}원</span>
+              {/* reward가 0이면 사례금 영역 숨김 */}
+              {room.relatedPost.reward > 0 && (
+                <>
+                  <span className={styles.metaDivider}>·</span>
+                  <span>{room.relatedPost.reward.toLocaleString()}원</span>
+                </>
+              )}
             </div>
           )}
         </div>

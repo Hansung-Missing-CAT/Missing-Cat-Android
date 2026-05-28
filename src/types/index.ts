@@ -150,7 +150,7 @@ export interface ApiError {
 }
 
 // 제보 분석 상태
-export type TipStatus = 'processing' | 'done' | 'error'
+export type TipStatus = 'processing' | 'done' | 'failed' | 'error'
 
 // 제보 분석 응답
 export interface TipAnalysis {

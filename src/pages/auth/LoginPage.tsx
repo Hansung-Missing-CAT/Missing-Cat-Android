@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Input from '@/components/Input/Input'
 import Button from '@/components/Button/Button'
@@ -68,9 +68,44 @@ export default function LoginPage() {
     }
   }
 
-  // Google 로그인 — Firebase Auth 연동 (Phase 7 네이티브 연동 시 완성)
+  // 리다이렉트 후 URL 해시에서 id_token 추출해 백엔드 인증 처리
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash.includes('id_token')) return
+
+    const params = new URLSearchParams(hash.slice(1))
+    const idToken = params.get('id_token')
+
+    // 해시 제거 — 새로고침 시 재처리 방지
+    window.history.replaceState(null, '', window.location.pathname)
+
+    if (!idToken) return
+
+    setIsLoading(true)
+    authService.googleLogin(idToken)
+      .then(({ user, accessToken }) => {
+        setAuth(user, accessToken)
+        navigate('/', { replace: true })
+      })
+      .catch(() => {
+        setServerError('Google 로그인에 실패했습니다.')
+      })
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  // Google 버튼 클릭 — OAuth2 팝업 리다이렉트로 계정 선택
   const handleGoogleLogin = () => {
-    alert('Google 로그인은 Firebase 설정 후 활성화됩니다')
+    const clientId = '472161282624-unctbr8cfum2l195ufaoeqpcgcvdf8rb.apps.googleusercontent.com'
+    const redirectUri = `${window.location.origin}/login`
+    const nonce = Math.random().toString(36).slice(2)
+    const url =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=id_token` +
+      `&scope=openid%20email%20profile` +
+      `&nonce=${nonce}`
+    window.location.href = url
   }
 
   const EyeIcon = () => (
@@ -144,6 +179,7 @@ export default function LoginPage() {
           <GoogleIcon />
           Google로 계속하기
         </button>
+
       </form>
 
       <p className={styles.registerLink}>

@@ -52,6 +52,7 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
   // No.73 보호자에게 제보 전송 → 채팅방으로 이동
   const handleSend = async (postId: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    console.log('[DEBUG] handleSend postId:', postId, 'tipId:', tipId)
     if (!tipId || sendingPostId === postId) return
     setSendingPostId(postId)
     try {
@@ -108,16 +109,16 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
           {results.map((result, index) => {
             const { post, similarityScore } = result
             const level = getSimilarityLevel(similarityScore)
-            const isSent = sentPostIds.has(post.id)
+            const isSent = sentPostIds.has(result.postId)
 
             return (
               <div
                 key={result.postId}
                 className={styles.card}
-                onClick={() => handleCardClick(post.id)}
+                onClick={() => handleCardClick(result.postId)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleCardClick(post.id)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCardClick(result.postId)}
               >
                 {/* 순위 뱃지 */}
                 {index === 0 && <div className={styles.rankBadge}>최고 유사</div>}
@@ -164,13 +165,13 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
                 {/* No.73 제보 전송 버튼 */}
                 <button
                   className={`${styles.sendBtn} ${isSent ? styles.sendBtnDone : ''}`}
-                  onClick={(e) => { void handleSend(post.id, e) }}
-                  disabled={isSent || sendingPostId === post.id}
+                  onClick={(e) => { void handleSend(result.postId, e) }}
+                  disabled={isSent || sendingPostId === result.postId}
                 >
                   <SendIcon />
                   {isSent
                     ? '제보 전송 완료'
-                    : sendingPostId === post.id
+                    : sendingPostId === result.postId
                     ? '전송 중...'
                     : '보호자에게 제보 전송'}
                 </button>

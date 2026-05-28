@@ -3,6 +3,7 @@ import type { TipOffFormData } from '../TipOffPage'
 import { compressImages } from '@/utils/imageOptimizer'
 import KakaoMap from '@/components/KakaoMap/KakaoMap'
 import { loadKakaoMap } from '@/utils/kakaoMap'
+import AddressSearch from '@/components/AddressSearch/AddressSearch'
 import styles from './Step1Upload.module.css'
 
 // 카카오 Geocoder 응답 최소 타입
@@ -35,13 +36,6 @@ const CloseIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-)
-
-const PinIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
   </svg>
 )
 
@@ -218,25 +212,13 @@ export default function Step1Upload({ form, update, onStartAnalysis, isUploading
           </div>
 
           <div className={styles.locationForm}>
-            <div className={styles.inputWrapper}>
-              <PinIcon />
-              <input
-                type="text"
-                className={styles.locationInput}
-                placeholder="예: 서울시 마포구 합정동"
-                value={form.address}
-                onChange={(e) => update({ address: e.target.value })}
-              />
-              {form.address && (
-                <button
-                  className={styles.clearBtn}
-                  onClick={() => update({ address: '' })}
-                  aria-label="주소 지우기"
-                >
-                  <CloseIcon />
-                </button>
-              )}
-            </div>
+            {/* AddressSearch: 카카오 Places 검색으로 직접 좌표 반환 */}
+            <AddressSearch
+              value={form.address}
+              onChange={(value) => update({ address: value })}
+              onSelect={(address, lat, lng) => update({ address, lat, lng })}
+              placeholder="예: 서울시 마포구 합정동"
+            />
             <div className={styles.inputWrapper}>
               <SearchIcon />
               <input
