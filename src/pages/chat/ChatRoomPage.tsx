@@ -133,7 +133,7 @@ export default function ChatRoomPage() {
     if (!roomId) { setIsRoomLoading(false); return }
     void chatsService.getChat(roomId)
       .then((fetchedRoom) => { addOrUpdateRoom(fetchedRoom) })
-      .catch(() => {})
+      .catch((err) => { console.error('[ERROR] getChat 실패 roomId:', roomId, err) })
       .finally(() => { setIsRoomLoading(false) })
   }, [roomId, addOrUpdateRoom])
 
@@ -229,7 +229,10 @@ export default function ChatRoomPage() {
     return (
       <div className={styles.notFound}>
         <p>채팅방을 찾을 수 없습니다.</p>
-        <button onClick={() => navigate('/chat')} className={styles.backBtn} style={{ whiteSpace: 'nowrap' }}>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
+          roomId: {roomId}
+        </p>
+        <button onClick={() => navigate('/chat')} className={styles.backBtn} style={{ whiteSpace: 'nowrap', marginTop: '1rem' }}>
           목록으로
         </button>
       </div>

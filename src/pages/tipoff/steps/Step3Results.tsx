@@ -48,6 +48,7 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
   const navigate = useNavigate()
   const [sentPostIds, setSentPostIds] = useState<Set<string>>(new Set())
   const [sendingPostId, setSendingPostId] = useState<string | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   // No.73 보호자에게 제보 전송 → 채팅방으로 이동
   const handleSend = async (postId: string, e: React.MouseEvent) => {
@@ -55,12 +56,18 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
     console.log('[DEBUG] handleSend postId:', postId, 'tipId:', tipId)
     if (!tipId || sendingPostId === postId) return
     setSendingPostId(postId)
+    setSendError(null)
     try {
       const { chatId } = await tipsService.sendTip(tipId, postId)
+      console.log('[DEBUG] sendTip 성공 chatId:', chatId)
       setSentPostIds((prev) => new Set(prev).add(postId))
       navigate(`/chat/${chatId}`)
-    } catch {
+    } catch (err) {
+      console.error('[ERROR] sendTip 실패:', err)
       setSendingPostId(null)
+      const axiosErr = err as { response?: { data?: { message?: string; code?: string } } }
+      const msg = axiosErr?.response?.data?.message
+      setSendError(msg ?? '제보 전송에 실패했습니다. 다시 시도해주세요.')
     }
   }
 
@@ -103,6 +110,13 @@ export default function Step3Results({ results, tipOffForm, tipId }: Props) {
             </p>
           </div>
         </div>
+
+        {/* No.73 제보 전송 에러 메시지 */}
+        {sendError && (
+          <p style={{ color: 'var(--color-error)', textAlign: 'center', padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+            {sendError}
+          </p>
+        )}
 
         {/* 매칭 결과 카드 목록 */}
         <div className={styles.list}>
