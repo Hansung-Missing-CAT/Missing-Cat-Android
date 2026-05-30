@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { isAxiosError } from 'axios'
 import Input from '@/components/Input/Input'
 import Button from '@/components/Button/Button'
 import { authService } from '@/services/auth'
@@ -54,15 +55,19 @@ export default function LoginPage() {
       const { user, accessToken } = await authService.login({ email, password })
       setAuth(user, accessToken)
       navigate('/', { replace: true })
-    } catch {
-      // API 미연동 시 목 사용자로 처리
-      const mockUser = {
-        id: 'mock-user-1',
-        email: email,
-        nickname: email.split('@')[0],
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const status = err.response?.status
+        if (status === 401 || status === 400) {
+          setServerError('이메일 또는 비밀번호가 올바르지 않습니다.')
+        } else if (!err.response) {
+          setServerError('서버에 연결할 수 없습니다. 네트워크를 확인해주세요.')
+        } else {
+          setServerError('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+        }
+      } else {
+        setServerError('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       }
-      setAuth(mockUser, 'mock-token')
-      navigate('/', { replace: true })
     } finally {
       setIsLoading(false)
     }

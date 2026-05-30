@@ -42,7 +42,8 @@ export const loadKakaoMap = (): Promise<void> => {
 
     const script = document.createElement('script')
     script.type = 'text/javascript'
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`
+    // https:// 명시 — androidScheme='http' 환경에서 //는 http:로 해석되어 Kakao CDN 로드 실패
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`
     script.onload = () => {
       window.kakao.maps.load(() => resolve())
     }

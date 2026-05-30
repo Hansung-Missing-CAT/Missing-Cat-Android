@@ -243,7 +243,7 @@ export default function PostDetailPage() {
         <div className={styles.photoArea}>
           {post.images.length > 0 ? (
             <>
-              <img src={post.images[photoIndex]} alt={post.petName} className={styles.photo} />
+              <img src={post.images[photoIndex]} alt={post.petName} className={styles.photo} draggable={false} />
               {post.images.length > 1 && (
                 <div className={styles.photoDots}>
                   {post.images.map((_, i) => (
